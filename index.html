@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Together - Shared Calendar & To-Do</title>
+    <link rel="stylesheet" href="styles.css">
+    
+    <!-- Firebase SDKs -->
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js';
+        import { getAuth } from 'https://www.gstatic.com/firebasejs/10.7.0/firebase-auth.js';
+        import { getFirestore } from 'https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js';
+        import { getStorage } from 'https://www.gstatic.com/firebasejs/10.7.0/firebase-storage.js';
+        
+        // Test Firebase configuration - replace with your actual config
+        const firebaseConfig = {
+            apiKey: "AIzaSyAB1HPjlSc4wwcba3dwjutDJwjSfhjwjMM",
+            authDomain: "bangzhen-todo-list.firebaseapp.com",
+            projectId: "bangzhen-todo-list",
+            storageBucket: "bangzhen-todo-list.firebasestorage.app",
+            messagingSenderId: "296464369558",
+            appId: "1:296464369558:web:9a1ffa32054eebc262bfb7"
+        };
+        
+        try {
+            window.app = initializeApp(firebaseConfig);
+            window.auth = getAuth(window.app);
+            window.db = getFirestore(window.app);
+            window.storage = getStorage(window.app);
+            console.log('Firebase initialized successfully');
+        } catch (error) {
+            console.error('Firebase initialization error:', error);
+            alert('Firebase configuration error. Please check your config.');
+        }
+    </script>
+</head>
+<body>
+    <!-- Loading Screen -->
+    <div id="loading-screen" class="loading-screen">
+        <div class="loading-spinner"></div>
+        <p>Loading Together...</p>
+    </div>
+
+    <!-- Authentication Modal -->
+    <div id="auth-modal" class="modal auth-modal">
+        <div class="modal-content auth-content">
+            <div class="auth-header">
+                <h2>Welcome to Together</h2>
+                <p>Your shared calendar and to-do companion</p>
+            </div>
+            
+            <div id="login-form" class="auth-form">
+                <h3>Sign In</h3>
+                <form id="email-login-form">
+                    <div class="form-group">
+                        <input type="email" id="login-email" placeholder="Email" required>
+                    </div>
+                    <div class="form-group">
+                        <input type="password" id="login-password" placeholder="Password" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary full-width">
+                        <span>Sign In</span>
+                        <span class="button-loader" style="display: none;"></span>
+                    </button>
+                </form>
+                
+                <div class="auth-divider">
+                    <span>or</span>
+                </div>
+                
+                <button id="google-login-btn" class="btn btn-google full-width">
+                    <span class="google-icon">G</span>
+                    Continue with Google
+                </button>
+                
+                <p class="auth-switch">
+                    Don't have an account? <a href="#" id="show-signup">Sign up</a>
+                </p>
+            </div>
+            
+            <div id="signup-form" class="auth-form" style="display: none;">
+                <h3>Create Account</h3>
+                <form id="email-signup-form">
+                    <div class="form-group">
+                        <input type="text" id="signup-name" placeholder="Your Name" required>
+                    </div>
+                    <div class="form-group">
+                        <input type="email" id="signup-email" placeholder="Email" required>
+                    </div>
+                    <div class="form-group">
+                        <input type="password" id="signup-password" placeholder="Password (6+ characters)" required minlength="6">
+                    </div>
+                    <button type="submit" class="btn btn-primary full-width">
+                        <span>Create Account</span>
+                        <span class="button-loader" style="display: none;"></span>
+                    </button>
+                </form>
+                
+                <div class="auth-divider">
+                    <span>or</span>
+                </div>
+                
+                <button id="google-signup-btn" class="btn btn-google full-width">
+                    <span class="google-icon">G</span>
+                    Sign up with Google
+                </button>
+                
+                <p class="auth-switch">
+                    Already have an account? <a href="#" id="show-login">Sign in</a>
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Workspace Setup Modal -->
+    <div id="workspace-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">Create Your Shared Space</h3>
+            </div>
+            <form id="workspace-form">
+                <div class="form-group">
+                    <label>Workspace Name</label>
+                    <input type="text" id="workspace-name" placeholder="Alex & Blake's Calendar" required>
+                </div>
+                <div class="form-group">
+                    <label>Choose Theme</label>
+                    <div class="theme-selector">
+                        <div class="theme-option active" data-theme="default">
+                            <div class="theme-preview theme-default"></div>
+                            <span>Ocean</span>
+                        </div>
+                        <div class="theme-option" data-theme="sunset">
+                            <div class="theme-preview theme-sunset"></div>
+                            <span>Sunset</span>
+                        </div>
+                        <div class="theme-option" data-theme="forest">
+                            <div class="theme-preview theme-forest"></div>
+                            <span>Forest</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="btn-group">
+                    <button type="submit" class="btn btn-primary">
+                        <span>Create Workspace</span>
+                        <span class="button-loader" style="display: none;"></span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Join Workspace Modal -->
+    <div id="join-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">Join Shared Space</h3>
+                <button class="close-btn" onclick="closeModal('join-modal')">&times;</button>
+            </div>
+            <form id="join-form">
+                <div class="form-group">
+                    <label>Invitation Code</label>
+                    <input type="text" id="join-code" placeholder="Enter 6-digit code" maxlength="6" required>
+                </div>
+                <p class="helper-text">Ask your partner for the invitation code from their app</p>
+                <div class="btn-group">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('join-modal')">Cancel</button>
+                    <button type="submit" class="btn btn-primary">
+                        <span>Join Workspace</span>
+                        <span class="button-loader" style="display: none;"></span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Main App Container -->
+    <div class="app-container" id="main-app" style="display: none;">
+        <!-- Header -->
+        <div class="header">
+            <div class="header-left">
+                <h1 id="workspace-title">Together</h1>
+                <span id="workspace-subtitle"></span>
+            </div>
+            <div class="header-right">
+                <button class="header-btn" onclick="showInviteModal()">📤</button>
+                <button class="header-btn" onclick="showJoinModal()">➕</button>
+                <div class="user-info">
+                    <div class="user-avatar" id="current-user-avatar">U</div>
+                    <div class="user-avatar" id="partner-avatar" style="display: none;">P</div>
+                </div>
+                <button class="header-btn logout-btn" onclick="signOut()">🚪</button>
+            </div>
+        </div>
+
+        <!-- Connection Status -->
+        <div id="connection-status" class="connection-status" style="display: none;">
+            <span id="status-text">Connecting...</span>
+        </div>
+
+        <!-- Tab Navigation -->
+        <div class="tab-navigation">
+            <button class="tab-btn active" onclick="switchTab('calendar')">📅 Calendar</button>
+            <button class="tab-btn" onclick="switchTab('todo')">✅ To-Do Lists</button>
+        </div>
+
+        <!-- Content Area -->
+        <div class="content-area">
+            <!-- Calendar View -->
+            <div id="calendar-view" class="calendar-container">
+                <div class="calendar-header">
+                    <div class="calendar-nav">
+                        <button class="nav-btn" onclick="changeMonth(-1)">‹</button>
+                        <div class="month-year" id="monthYear">January 2024</div>
+                        <button class="nav-btn" onclick="changeMonth(1)">›</button>
+                    </div>
+                    <button class="add-event-btn" onclick="openEventModal()">+ Add Event</button>
+                </div>
+                <div class="calendar-grid" id="calendarGrid">
+                    <!-- Calendar will be generated here -->
+                </div>
+            </div>
+
+            <!-- To-Do View -->
+            <div id="todo-view" class="todo-container">
+                <div class="todo-header">
+                    <h2 style="color: white; font-size: 1.8rem;">Our To-Do Lists</h2>
+                    <button class="add-event-btn" onclick="openTodoModal()">+ Add Task</button>
+                </div>
+                <div class="todo-lists">
+                    <div class="todo-list">
+                        <h3 id="user1-todos-title">My Tasks</h3>
+                        <div id="user1-todos">
+                            <!-- User 1 todos will be generated here -->
+                        </div>
+                        <div class="add-todo-btn" onclick="openTodoModal('user1')">+ Add Task</div>
+                    </div>
+                    <div class="todo-list">
+                        <h3 id="user2-todos-title">Partner's Tasks</h3>
+                        <div id="user2-todos">
+                            <!-- User 2 todos will be generated here -->
+                        </div>
+                        <div class="add-todo-btn" onclick="openTodoModal('user2')">+ Add Task</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Event Modal -->
+        <div id="eventModal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3 class="modal-title" id="event-modal-title">Add Event</h3>
+                    <button class="close-btn" onclick="closeModal('eventModal')">&times;</button>
+                </div>
+                <form id="eventForm">
+                    <div class="form-group">
+                        <label>Title</label>
+                        <input type="text" id="eventTitle" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Date</label>
+                        <input type="date" id="eventDate" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Time</label>
+                        <input type="time" id="eventTime">
+                    </div>
+                    <div class="form-group">
+                        <label>Location</label>
+                        <input type="text" id="eventLocation">
+                    </div>
+                    <div class="form-group">
+                        <label>Notes</label>
+                        <textarea id="eventNotes" rows="3"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label>Attachment</label>
+                        <input type="file" id="eventFile" accept="image/*,.pdf,.doc,.docx">
+                    </div>
+                    <div class="form-group">
+                        <div class="checkbox-group">
+                            <input type="checkbox" id="eventShared" checked>
+                            <label for="eventShared">Shared Event</label>
+                        </div>
+                    </div>
+                    <div class="btn-group">
+                        <button type="button" class="btn btn-secondary" onclick="closeModal('eventModal')">Cancel</button>
+                        <button type="submit" class="btn btn-primary">
+                            <span id="event-save-text">Save Event</span>
+                            <span id="event-save-loader" class="button-loader" style="display: none;"></span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Todo Modal -->
+        <div id="todoModal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3 class="modal-title">Add Task</h3>
+                    <button class="close-btn" onclick="closeModal('todoModal')">&times;</button>
+                </div>
+                <form id="todoForm">
+                    <div class="form-group">
+                        <label>Task</label>
+                        <input type="text" id="todoTitle" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Due Date</label>
+                        <input type="date" id="todoDueDate">
+                    </div>
+                    <div class="form-group">
+                        <label>Notes</label>
+                        <textarea id="todoNotes" rows="2"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label>Attachment</label>
+                        <input type="file" id="todoFile" accept="image/*,.pdf,.doc,.docx">
+                    </div>
+                    <div class="form-group">
+                        <label>Assign to</label>
+                        <select id="todoAssignee" required>
+                            <option value="">Select person</option>
+                            <option value="user1">Me</option>
+                            <option value="user2">Partner</option>
+                            <option value="shared">Both (Shared)</option>
+                        </select>
+                    </div>
+                    <div class="btn-group">
+                        <button type="button" class="btn btn-secondary" onclick="closeModal('todoModal')">Cancel</button>
+                        <button type="submit" class="btn btn-primary">
+                            <span id="todo-save-text">Add Task</span>
+                            <span id="todo-save-loader" class="button-loader" style="display: none;"></span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Invite Modal -->
+        <div id="invite-modal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3 class="modal-title">Invite Partner</h3>
+                    <button class="close-btn" onclick="closeModal('invite-modal')">&times;</button>
+                </div>
+                <div class="invite-content">
+                    <div class="invite-code-section">
+                        <label>Share this code with your partner:</label>
+                        <div class="invite-code-display">
+                            <span id="invite-code-text">------</span>
+                            <button class="copy-btn" onclick="copyInviteCode()">📋</button>
+                        </div>
+                    </div>
+                    <div class="auth-divider"><span>or</span></div>
+                    <form id="email-invite-form">
+                        <div class="form-group">
+                            <label>Send email invitation:</label>
+                            <input type="email" id="invite-email" placeholder="partner@example.com">
+                        </div>
+                        <button type="submit" class="btn btn-primary full-width">Send Invitation</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js" type="module"></script>
+</body>
+</html>
