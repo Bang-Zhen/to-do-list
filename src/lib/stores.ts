@@ -1,21 +1,14 @@
 import { atom } from 'nanostores';
-
-/*
-	const todoData = {
-		title: document.getElementById('todoTitle').value,
-		dueDate: document.getElementById('todoDueDate').value,
-		notes: document.getElementById('todoNotes').value,
-		assignee: document.getElementById('todoAssignee').value,
-		completed: false,
-		workspaceId: currentWorkspace,
-		createdBy: currentUser.uid,
-		createdAt: serverTimestamp(),
-	};
-*/
+import type { User } from 'firebase/auth';
 
 export const $todos = atom<Todo[]>([])
 export const setTodos = (todos: Todo[]) => {
     $todos.set(todos);
+}
+
+export const $currentUser = atom<User | null>(null);
+export const setCurrentUser = (user: User | null) => {
+    $currentUser.set(user);
 }
 
 type Todo = {

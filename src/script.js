@@ -28,12 +28,13 @@ import {
 	where,
 } from 'firebase/firestore';
 
-import { $todos, setTodos } from './lib/stores';
+import { $todos, setTodos, $currentUser, setCurrentUser } from './lib/stores';
+
+const currentDate = new Date();
 
 // App State
-let currentUser = null;
+// let currentUser = null;
 let currentWorkspace = null;
-const currentDate = new Date();
 let events = [];
 // let todos = [];
 let unsubscribeEvents = null;
@@ -42,6 +43,17 @@ let unsubscribeWorkspace = null;
 
 $todos.subscribe((todos) => {
 	renderTodos(todos);
+});
+
+$currentUser.listen((user) => {
+	if (user) {
+		console.log('Current user:', user);
+		checkUserWorkspace(user);
+	} else {
+		console.log('No user logged in');
+		showAuthModal();
+		hideMainApp();
+	}
 });
 
 window.addEventListener('load', initializeApp);
@@ -58,14 +70,16 @@ function initializeApp() {
 		);
 		hideLoadingScreen();
 
-		if (user) {
-			currentUser = user;
-			checkUserWorkspace();
-		} else {
-			currentUser = null;
-			showAuthModal();
-			hideMainApp();
-		}
+		setCurrentUser(user);
+
+		// if (user) {
+		// 	setCurrentUser(user);
+		// 	// checkUserWorkspace();
+		// } else {
+		// 	setCurrentUser(null);
+		// 	showAuthModal();
+		// 	hideMainApp();
+		// }
 	});
 }
 
@@ -188,7 +202,7 @@ async function signOut() {
 }
 
 // Workspace Management
-async function checkUserWorkspace() {
+async function checkUserWorkspace(currentUser) {
 	try {
 		console.log('Checking user workspace for:', currentUser.uid);
 		const userDoc = await getDoc(doc(db, 'users', currentUser.uid));
@@ -249,6 +263,8 @@ document
 
 			// Generate unique invite code
 			const inviteCode = generateInviteCode();
+
+			const currentUser = $currentUser.get();
 
 			// Create workspace document
 			const workspaceData = {
@@ -552,7 +568,7 @@ function openEventModal(selectedDate = null) {
 function openTodoModal(assignee = null) {
 	if (assignee) {
 		document.getElementById('todoAssignee').value =
-			assignee === 'user1' ? currentUser.uid : 'shared';
+			assignee === 'user1' ? $currentUser.get()?.uid : 'shared';
 	}
 	openModal('todoModal');
 }
@@ -580,6 +596,7 @@ function openEventDetails(eventId) {
 // addEvent
 document.getElementById('eventForm').addEventListener('submit', async (e) => {
 	e.preventDefault();
+	const currentUser = $currentUser.get();
 
 	const eventData = {
 		title: document.getElementById('eventTitle').value,
@@ -651,6 +668,7 @@ document.getElementById('todoForm').addEventListener('submit', async (e) => {
 
 // Todo Functions
 function renderTodos(todos) {
+	const currentUser = $currentUser.get();
 	console.log('Rendering todos for user:', currentUser?.uid);
 
 	const user1Container = document.getElementById('user1-todos');
@@ -729,6 +747,8 @@ function showJoinModal() {
 }
 
 document.getElementById('join-form').addEventListener('submit', async (e) => {
+	const currentUser = $currentUser.get();
+
 	e.preventDefault();
 
 	const inviteCode = document
@@ -821,6 +841,7 @@ function generateInviteCode() {
 }
 
 function updateUserAvatar() {
+	const currentUser = $currentUser.get();
 	const avatar = document.getElementById('current-user-avatar');
 	if (currentUser.displayName) {
 		avatar.textContent = currentUser.displayName.charAt(0).toUpperCase();
