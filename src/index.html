@@ -156,13 +156,15 @@
                 <span id="workspace-subtitle"></span>
             </div>
             <div class="header-right">
-                <button class="header-btn" onclick="showInviteModal()">📤</button>
-                <button class="header-btn" onclick="showJoinModal()">➕</button>
+                <button class="header-btn" onclick="showInviteModal()" data-tooltip="Share Workspace">📤</button>
+                <button class="header-btn" onclick="showJoinModal()" data-tooltip="Join Workspace">➕</button>
+                <button class="header-btn" onclick="showMembersModal()" data-tooltip="Manage Members">👥</button>
+                <button class="header-btn" onclick="showThemeModal()" data-tooltip="Change Theme">🎨</button>
                 <div class="user-info">
-                    <div class="user-avatar" id="current-user-avatar">U</div>
+                    <div class="user-avatar" id="current-user-avatar" data-tooltip="Profile Settings">U</div>
                     <div class="user-avatar" id="partner-avatar" style="display: none;">P</div>
                 </div>
-                <button class="header-btn logout-btn" onclick="signOut()">🚪</button>
+                <button class="header-btn logout-btn" onclick="signOut()" data-tooltip="Sign Out">🚪</button>
             </div>
         </div>
 
@@ -171,10 +173,19 @@
             <span id="status-text">Connecting...</span>
         </div>
 
+        <!-- Progress Bar -->
+        <div class="progress-container">
+            <div id="task-progress-bar" class="progress-bar">
+                <div class="progress-fill"></div>
+            </div>
+            <div id="progress-text" class="progress-text">0% Complete</div>
+        </div>
+
         <!-- Tab Navigation -->
         <div class="tab-navigation">
-            <button class="tab-btn active" onclick="switchTab('calendar')">📅 Calendar</button>
-            <button class="tab-btn" onclick="switchTab('todo')">✅ To-Do Lists</button>
+            <button class="tab-btn active" onclick="switchTab('calendar')" data-tooltip="View and manage your calendar">📅 Calendar</button>
+            <button class="tab-btn" onclick="switchTab('todo')" data-tooltip="Manage personal to-do lists">✅ To-Do Lists</button>
+            <button class="tab-btn" onclick="switchTab('shared')" data-tooltip="View shared tasks and activities">🤝 Shared Tasks</button>
         </div>
 
         <!-- Content Area -->
@@ -197,23 +208,88 @@
             <!-- To-Do View -->
             <div id="todo-view" class="todo-container">
                 <div class="todo-header">
-                    <h2 style="color: var(--text-primary); font-size: 1.8rem;">Our To-Do Lists</h2>
+                    <h2 class="section-title">To-Do Lists</h2>
                     <button class="add-event-btn" onclick="openTodoModal()">+ Add Task</button>
                 </div>
                 <div class="todo-lists">
                     <div class="todo-list">
                         <h3 id="user1-todos-title">My Tasks</h3>
-                        <div id="user1-todos">
+                        <div id="user1-todos" class="todo-list-content">
                             <!-- User 1 todos will be generated here -->
                         </div>
                         <div class="add-todo-btn" onclick="openTodoModal('user1')">+ Add Task</div>
                     </div>
                     <div class="todo-list">
                         <h3 id="user2-todos-title">Partner's Tasks</h3>
-                        <div id="user2-todos">
+                        <div id="user2-todos" class="todo-list-content">
                             <!-- User 2 todos will be generated here -->
                         </div>
                         <div class="add-todo-btn" onclick="openTodoModal('user2')">+ Add Task</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Shared Tasks View -->
+            <div id="shared-view" class="todo-container hidden">
+                <div class="todo-header">
+                    <h2 class="section-title">Shared Tasks</h2>
+                    <button class="add-event-btn" onclick="openTodoModal('shared')">+ Add Shared Task</button>
+                </div>
+                <div class="todo-lists single-column">
+                    <div class="todo-list full-width">
+                        <div id="shared-todos" class="todo-list-content">
+                            <!-- Shared todos will be generated here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Settings Modal -->
+        <div id="settingsModal" class="modal">
+            <div class="modal-content settings-container">
+                <div class="modal-header">
+                    <h3 class="modal-title">Settings & Profile</h3>
+                    <button class="close-btn" onclick="closeModal('settingsModal')">&times;</button>
+                </div>
+                <div class="settings-grid">
+                    <div class="settings-section">
+                        <h3>Profile Information</h3>
+                        <form id="profile-settings-form">
+                            <div class="form-group">
+                                <label>Display Name</label>
+                                <input type="text" id="settings-name" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Birthday</label>
+                                <input type="date" id="settings-birthday" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Bio</label>
+                                <textarea id="settings-bio" rows="3"></textarea>
+                            </div>
+                            <button type="submit" class="btn btn-primary">
+                                <span>Save Profile</span>
+                                <span class="button-loader" style="display: none;"></span>
+                            </button>
+                        </form>
+                    </div>
+                    <div class="settings-section">
+                        <h3>Theme Selection</h3>
+                        <div class="theme-grid">
+                            <div class="theme-card" data-theme="default">
+                                <div class="theme-preview theme-default"></div>
+                                <span>Ocean</span>
+                            </div>
+                            <div class="theme-card" data-theme="sunset">
+                                <div class="theme-preview theme-sunset"></div>
+                                <span>Sunset</span>
+                            </div>
+                            <div class="theme-card" data-theme="forest">
+                                <div class="theme-preview theme-forest"></div>
+                                <span>Forest</span>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -232,12 +308,22 @@
                         <input type="text" id="eventTitle" required>
                     </div>
                     <div class="form-group">
-                        <label>Date</label>
-                        <input type="date" id="eventDate" required>
+                        <label>Start Date</label>
+                        <input type="date" id="eventStartDate" required>
                     </div>
                     <div class="form-group">
-                        <label>Time</label>
+                        <label>End Date</label>
+                        <input type="date" id="eventEndDate">
+                    </div>
+                    <div class="form-group">
+                        <label>Time (optional)</label>
                         <input type="time" id="eventTime">
+                    </div>
+                    <div class="form-group">
+                        <div class="checkbox-group">
+                            <input type="checkbox" id="isMultiDay">
+                            <label for="isMultiDay">Multi-day event</label>
+                        </div>
                     </div>
                     <div class="form-group">
                         <label>Location</label>
@@ -301,6 +387,63 @@
                         </button>
                     </div>
                 </form>
+            </div>
+        </div>
+
+        <!-- Theme Modal -->
+        <div id="themeModal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3 class="modal-title">Choose Theme</h3>
+                    <button class="close-btn" onclick="closeModal('themeModal')">&times;</button>
+                </div>
+                <div class="theme-grid">
+                    <div class="theme-card" data-theme="ocean" onclick="setTheme('ocean')">
+                        <div class="theme-preview" style="background: linear-gradient(135deg, #2193b0, #6dd5ed)"></div>
+                        <span>Ocean</span>
+                    </div>
+                    <div class="theme-card" data-theme="sunset" onclick="setTheme('sunset')">
+                        <div class="theme-preview" style="background: linear-gradient(135deg, #ff9a8b, #ff6a88)"></div>
+                        <span>Sunset</span>
+                    </div>
+                    <div class="theme-card" data-theme="forest" onclick="setTheme('forest')">
+                        <div class="theme-preview" style="background: linear-gradient(135deg, #2d5a27, #90a955)"></div>
+                        <span>Forest</span>
+                    </div>
+                    <div class="theme-card" data-theme="lavender" onclick="setTheme('lavender')">
+                        <div class="theme-preview" style="background: linear-gradient(135deg, #9795ef, #f9c5d1)"></div>
+                        <span>Lavender</span>
+                    </div>
+                    <div class="theme-card" data-theme="midnight" onclick="setTheme('midnight')">
+                        <div class="theme-preview" style="background: linear-gradient(135deg, #0f2027, #203a43)"></div>
+                        <span>Midnight</span>
+                    </div>
+                    <div class="theme-card" data-theme="aurora" onclick="setTheme('aurora')">
+                        <div class="theme-preview" style="background: linear-gradient(135deg, #20bf55, #01baef)"></div>
+                        <span>Aurora</span>
+                    </div>
+                    <div class="theme-card" data-theme="desert" onclick="setTheme('desert')">
+                        <div class="theme-preview" style="background: linear-gradient(135deg, #f9b16e, #f68080)"></div>
+                        <span>Desert</span>
+                    </div>
+                    <div class="theme-card" data-theme="cosmic" onclick="setTheme('cosmic')">
+                        <div class="theme-preview" style="background: linear-gradient(135deg, #3a1c71, #d76d77)"></div>
+                        <span>Cosmic</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Manage Members Modal -->
+        <div id="membersModal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3 class="modal-title">Manage Members</h3>
+                    <button class="close-btn" onclick="closeModal('membersModal')">&times;</button>
+                </div>
+                <div class="members-list" id="membersList">
+                    <!-- Members will be listed here -->
+                </div>
             </div>
         </div>
 

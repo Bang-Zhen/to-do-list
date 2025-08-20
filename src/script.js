@@ -45,7 +45,7 @@ $todos.subscribe((todos) => {
 	renderTodos(todos);
 });
 
-$currentUser.listen((user) => {
+$currentUser.subscribe((user) => {
 	if (user) {
 		console.log('Current user:', user);
 		checkUserWorkspace(user);
@@ -56,31 +56,111 @@ $currentUser.listen((user) => {
 	}
 });
 
-window.addEventListener('load', initializeApp);
+window.addEventListener('load', () => {
+    initializeApp();
+    loadSavedTheme();
+});
 
 // Authentication Functions
 function initializeApp() {
-	console.log('Initializing app...');
-	showLoadingScreen();
+    console.log('Initializing app...');
+    showLoadingScreen();
 
-	onAuthStateChanged(auth, (user) => {
-		console.log(
-			'Auth state changed:',
-			user ? 'User logged in' : 'User logged out',
-		);
-		hideLoadingScreen();
+    // Show auth modal by default until we confirm a user is logged in
+    showAuthModal();
 
-		setCurrentUser(user);
+    onAuthStateChanged(auth, async (user) => {
+        console.log(
+            'Auth state changed:',
+            user ? 'User logged in' : 'User logged out',
+        );
+        hideLoadingScreen();
 
-		// if (user) {
-		// 	setCurrentUser(user);
-		// 	// checkUserWorkspace();
-		// } else {
-		// 	setCurrentUser(null);
-		// 	showAuthModal();
-		// 	hideMainApp();
-		// }
-	});
+        if (user) {
+            hideAuthModal();
+            setCurrentUser(user);
+            
+            // Check if user has completed profile
+            const userDoc = await getDoc(doc(db, 'users', user.uid));
+            if (!userDoc.exists() || !userDoc.data().profileCompleted) {
+                showProfileSetup();
+            }
+        } else {
+            setCurrentUser(null);
+            showAuthModal();
+            hideMainApp();
+        }
+    });
+}
+
+function showProfileSetup() {
+    const profileHTML = `
+        <div class="modal active" id="profile-modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3 class="modal-title">Complete Your Profile</h3>
+                </div>
+                <div class="profile-avatar" id="profile-avatar">
+                    ${$currentUser.get().email.charAt(0).toUpperCase()}
+                </div>
+                <form id="profile-form" class="profile-form">
+                    <div class="form-group">
+                        <label>Display Name</label>
+                        <input type="text" id="profile-name" value="${$currentUser.get().displayName || ''}" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Birthday</label>
+                        <input type="date" id="profile-birthday" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Bio (Optional)</label>
+                        <textarea id="profile-bio" rows="3"></textarea>
+                    </div>
+                    <div class="btn-group">
+                        <button type="submit" class="btn btn-primary">
+                            <span>Save Profile</span>
+                            <span class="button-loader" style="display: none;"></span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    `;
+
+    // Add the profile modal to the document
+    const div = document.createElement('div');
+    div.innerHTML = profileHTML;
+    document.body.appendChild(div.firstChild);
+
+    // Add event listener for form submission
+    document.getElementById('profile-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const button = e.target.querySelector('button');
+        showButtonLoading(button, true);
+
+        try {
+            const currentUser = $currentUser.get();
+            const profileData = {
+                displayName: document.getElementById('profile-name').value,
+                birthday: document.getElementById('profile-birthday').value,
+                bio: document.getElementById('profile-bio').value,
+                profileCompleted: true,
+                updatedAt: serverTimestamp()
+            };
+
+            await updateProfile(currentUser, { displayName: profileData.displayName });
+            await setDoc(doc(db, 'users', currentUser.uid), profileData, { merge: true });
+
+            document.getElementById('profile-modal').remove();
+            showNotification('Profile updated successfully!', 'success');
+            updateUserAvatar();
+        } catch (error) {
+            console.error('Error updating profile:', error);
+            showNotification('Error updating profile', 'error');
+        } finally {
+            showButtonLoading(button, false);
+        }
+    });
 }
 
 function showLoadingScreen() {
@@ -423,94 +503,148 @@ function setupTodoListener() {
 
 // Calendar Functions
 function generateCalendar(date) {
-	const grid = document.getElementById('calendarGrid');
-	const monthYear = document.getElementById('monthYear');
+    const grid = document.getElementById('calendarGrid');
+    const monthYear = document.getElementById('monthYear');
 
-	const year = date.getFullYear();
-	const month = date.getMonth();
+    const year = date.getFullYear();
+    const month = date.getMonth();
 
-	monthYear.textContent = new Intl.DateTimeFormat('en-US', {
-		month: 'long',
-		year: 'numeric',
-	}).format(date);
+    monthYear.textContent = new Intl.DateTimeFormat('en-US', {
+        month: 'long',
+        year: 'numeric',
+    }).format(date);
 
-	grid.innerHTML = '';
+    grid.innerHTML = '';
 
-	// Day headers
-	const dayHeaders = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-	dayHeaders.forEach((day) => {
-		const header = document.createElement('div');
-		header.className = 'day-header';
-		header.textContent = day;
-		grid.appendChild(header);
-	});
+    // Day headers
+    const dayHeaders = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    dayHeaders.forEach((day) => {
+        const header = document.createElement('div');
+        header.className = 'day-header';
+        header.textContent = day;
+        grid.appendChild(header);
+    });
 
-	// Generate calendar days
-	const firstDay = new Date(year, month, 1).getDay();
-	const daysInMonth = new Date(year, month + 1, 0).getDate();
-	const daysInPrevMonth = new Date(year, month, 0).getDate();
+    // Generate calendar days
+    const firstDay = new Date(year, month, 1).getDay();
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const daysInPrevMonth = new Date(year, month, 0).getDate();
 
-	// Previous month's trailing days
-	for (let i = firstDay - 1; i >= 0; i--) {
-		const day = document.createElement('div');
-		day.className = 'calendar-day other-month';
-		day.innerHTML = `
+    // Create array to store all calendar days
+    const calendarDays = [];
+
+    // Previous month's trailing days
+    for (let i = firstDay - 1; i >= 0; i--) {
+        const dayElement = document.createElement('div');
+        dayElement.className = 'calendar-day other-month';
+        dayElement.innerHTML = `
             <div class="day-number">${daysInPrevMonth - i}</div>
             <div class="day-events"></div>
         `;
-		grid.appendChild(day);
-	}
+        calendarDays.push(dayElement);
+    }
 
-	// Current month's days
-	const today = new Date();
-	for (let day = 1; day <= daysInMonth; day++) {
-		const dayElement = document.createElement('div');
-		const currentDateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+    // Current month's days
+    const today = new Date();
+    for (let day = 1; day <= daysInMonth; day++) {
+        const dayElement = document.createElement('div');
+        const currentDateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
 
-		dayElement.className = 'calendar-day';
-		if (
-			year === today.getFullYear() &&
-			month === today.getMonth() &&
-			day === today.getDate()
-		) {
-			dayElement.classList.add('today');
-		}
+        dayElement.className = 'calendar-day';
+        dayElement.dataset.date = currentDateStr;
+        
+        if (year === today.getFullYear() && month === today.getMonth() && day === today.getDate()) {
+            dayElement.classList.add('today');
+        }
 
-		const dayEvents = events.filter((event) => event.date === currentDateStr);
-		const eventsHtml = dayEvents
-			.map(
-				(event) =>
-					`<div class="event-pill ${event.shared ? 'shared' : ''} ${event.attachmentUrl ? 'has-attachment' : ''}" 
-                  onclick="openEventDetails('${event.id}')">${event.title}</div>`,
-			)
-			.join('');
-
-		dayElement.innerHTML = `
-            <div class="day-number">${day}</div>
-            <div class="day-events">${eventsHtml}</div>
-        `;
-
-		dayElement.addEventListener('click', (e) => {
-			if (!e.target.classList.contains('event-pill')) {
-				openEventModal(currentDateStr);
-			}
-		});
-
-		grid.appendChild(dayElement);
-	}
-
-	// Next month's leading days
-	const totalCells = grid.children.length - 7;
-	const remainingCells = 42 - totalCells;
-	for (let day = 1; day <= remainingCells; day++) {
-		const dayElement = document.createElement('div');
-		dayElement.className = 'calendar-day other-month';
-		dayElement.innerHTML = `
+        dayElement.innerHTML = `
             <div class="day-number">${day}</div>
             <div class="day-events"></div>
         `;
-		grid.appendChild(dayElement);
-	}
+
+        dayElement.addEventListener('click', (e) => {
+            if (!e.target.classList.contains('event-pill') && !e.target.classList.contains('event-span')) {
+                openEventModal(currentDateStr);
+            }
+        });
+
+        calendarDays.push(dayElement);
+    }
+
+    // Next month's leading days
+    const totalDays = calendarDays.length;
+    for (let day = 1; day <= 42 - totalDays; day++) {
+        const dayElement = document.createElement('div');
+        dayElement.className = 'calendar-day other-month';
+        dayElement.innerHTML = `
+            <div class="day-number">${day}</div>
+            <div class="day-events"></div>
+        `;
+        calendarDays.push(dayElement);
+    }
+
+    // Add all days to the grid
+    calendarDays.forEach(day => grid.appendChild(day));
+
+    // Render single-day events
+    events.forEach(event => {
+        if (!event.endDate || event.startDate === event.endDate) {
+            const dayElement = grid.querySelector(`[data-date="${event.startDate}"]`);
+            if (dayElement) {
+                const eventsContainer = dayElement.querySelector('.day-events');
+                const eventElement = document.createElement('div');
+                eventElement.className = `event-pill ${event.shared ? 'shared' : ''} ${event.attachmentUrl ? 'has-attachment' : ''}`;
+                eventElement.textContent = event.title;
+                eventElement.onclick = () => openEventDetails(event.id);
+                eventsContainer.appendChild(eventElement);
+            }
+        }
+    });
+
+    // Render multi-day events
+    events.filter(event => event.endDate && event.startDate !== event.endDate).forEach(event => {
+        const startDate = new Date(event.startDate);
+        const endDate = new Date(event.endDate);
+        
+        let currentDate = new Date(startDate);
+        let weekStart = null;
+        let weekEnd = null;
+        let currentWeekSpan = null;
+
+        while (currentDate <= endDate) {
+            const dateStr = currentDate.toISOString().split('T')[0];
+            const dayElement = grid.querySelector(`[data-date="${dateStr}"]`);
+            
+            if (dayElement) {
+                const dayIndex = Array.from(grid.children).indexOf(dayElement) - 7; // Subtract header row
+                const weekIndex = Math.floor(dayIndex / 7);
+                
+                if (weekStart === null) {
+                    weekStart = dayIndex;
+                    weekEnd = weekStart + (6 - (weekStart % 7));
+                    
+                    currentWeekSpan = document.createElement('div');
+                    currentWeekSpan.className = `event-span ${event.shared ? 'shared' : ''} start`;
+                    currentWeekSpan.style.top = `${30 + (weekIndex * 80)}px`; // Adjust based on your calendar cell height
+                    currentWeekSpan.textContent = event.title;
+                    currentWeekSpan.onclick = () => openEventDetails(event.id);
+                    grid.appendChild(currentWeekSpan);
+                }
+                
+                // If we've reached the end of the week or the end date
+                if (dayIndex === weekEnd || dateStr === event.endDate) {
+                    currentWeekSpan.style.left = `${(weekStart % 7) * 14.28}%`;
+                    currentWeekSpan.style.width = `${((dayIndex - weekStart + 1) * 14.28)}%`;
+                    if (dateStr === event.endDate) currentWeekSpan.classList.add('end');
+                    
+                    weekStart = null;
+                    currentWeekSpan = null;
+                }
+            }
+            
+            currentDate.setDate(currentDate.getDate() + 1);
+        }
+    });
 }
 
 function changeMonth(direction) {
@@ -520,21 +654,32 @@ function changeMonth(direction) {
 
 // Tab Switching
 function switchTab(tab) {
-	const calendarView = document.getElementById('calendar-view');
-	const todoView = document.getElementById('todo-view');
-	const tabBtns = document.querySelectorAll('.tab-btn');
+    const calendarView = document.getElementById('calendar-view');
+    const todoView = document.getElementById('todo-view');
+    const sharedView = document.getElementById('shared-view');
+    const tabBtns = document.querySelectorAll('.tab-btn');
 
-	tabBtns.forEach((btn) => btn.classList.remove('active'));
+    // Remove active class from all views and tabs
+    calendarView.classList.add('hidden');
+    todoView.classList.remove('active');
+    sharedView.classList.remove('active');
+    tabBtns.forEach((btn) => btn.classList.remove('active'));
 
-	if (tab === 'calendar') {
-		calendarView.classList.remove('hidden');
-		todoView.classList.remove('active');
-		tabBtns[0].classList.add('active');
-	} else {
-		calendarView.classList.add('hidden');
-		todoView.classList.add('active');
-		tabBtns[1].classList.add('active');
-	}
+    // Activate the selected tab
+    switch(tab) {
+        case 'calendar':
+            calendarView.classList.remove('hidden');
+            tabBtns[0].classList.add('active');
+            break;
+        case 'todo':
+            todoView.classList.add('active');
+            tabBtns[1].classList.add('active');
+            break;
+        case 'shared':
+            sharedView.classList.add('active');
+            tabBtns[2].classList.add('active');
+            break;
+    }
 }
 
 // Modal Functions
@@ -558,11 +703,21 @@ function closeModal(modalId) {
 }
 
 function openEventModal(selectedDate = null) {
-	if (selectedDate) {
-		document.getElementById('eventDate').value = selectedDate;
-	}
-	document.getElementById('event-modal-title').textContent = 'Add Event';
-	openModal('eventModal');
+    if (selectedDate) {
+        document.getElementById('eventStartDate').value = selectedDate;
+        document.getElementById('eventEndDate').value = selectedDate;
+    }
+    document.getElementById('event-modal-title').textContent = 'Add Event';
+    // Clear form fields
+    document.getElementById('eventTitle').value = '';
+    document.getElementById('eventStartDate').value = selectedDate || '';
+    document.getElementById('eventEndDate').value = selectedDate || '';
+    document.getElementById('eventTime').value = '';
+    document.getElementById('eventLocation').value = '';
+    document.getElementById('eventNotes').value = '';
+    document.getElementById('eventShared').checked = true;
+    document.getElementById('isMultiDay').checked = false;
+    openModal('eventModal');
 }
 
 function openTodoModal(assignee = null) {
@@ -595,20 +750,46 @@ function openEventDetails(eventId) {
 // Event Form Handler
 // addEvent
 document.getElementById('eventForm').addEventListener('submit', async (e) => {
-	e.preventDefault();
-	const currentUser = $currentUser.get();
+    e.preventDefault();
+    const currentUser = $currentUser.get();
+    const button = e.target.querySelector('button[type="submit"]');
 
-	const eventData = {
-		title: document.getElementById('eventTitle').value,
-		date: document.getElementById('eventDate').value,
-		time: document.getElementById('eventTime').value,
-		location: document.getElementById('eventLocation').value,
-		notes: document.getElementById('eventNotes').value,
-		shared: document.getElementById('eventShared').checked,
-		workspaceId: currentWorkspace,
-		createdBy: currentUser.uid,
-		updatedAt: serverTimestamp(),
-	};
+    try {
+        showButtonLoading(button, true);
+        const eventData = {
+            title: document.getElementById('eventTitle').value,
+            startDate: document.getElementById('eventStartDate').value,
+            endDate: document.getElementById('isMultiDay').checked ? document.getElementById('eventEndDate').value : document.getElementById('eventStartDate').value,
+            time: document.getElementById('eventTime').value,
+            location: document.getElementById('eventLocation').value,
+            notes: document.getElementById('eventNotes').value,
+            shared: document.getElementById('eventShared').checked,
+            workspaceId: currentWorkspace,
+            createdBy: currentUser.uid,
+            createdAt: serverTimestamp(),
+            updatedAt: serverTimestamp(),
+        };
+
+        const editingId = e.target.dataset.editingId;
+
+        if (editingId) {
+            // Update existing event
+            await updateDoc(doc(db, 'events', editingId), eventData);
+            showNotification('Event updated!', 'success');
+        } else {
+            // Create new event
+            const docRef = await addDoc(collection(db, 'events'), eventData);
+            showNotification('Event created!', 'success');
+        }
+
+        closeModal('eventModal');
+        delete e.target.dataset.editingId;
+    } catch (error) {
+        console.error('Error saving event:', error);
+        showNotification('Error saving event', 'error');
+    } finally {
+        showButtonLoading(button, false);
+    }
 
 	try {
 		showButtonLoading(e.target.querySelector('button[type="submit"]'), true);
@@ -639,102 +820,262 @@ document.getElementById('eventForm').addEventListener('submit', async (e) => {
 // Todo Form Handler
 // addTodo
 document.getElementById('todoForm').addEventListener('submit', async (e) => {
-	e.preventDefault();
+    e.preventDefault();
+    const currentUser = $currentUser.get();
 
-	const todoData = {
-		title: document.getElementById('todoTitle').value,
-		dueDate: document.getElementById('todoDueDate').value,
-		notes: document.getElementById('todoNotes').value,
-		assignee: document.getElementById('todoAssignee').value,
-		completed: false,
-		workspaceId: currentWorkspace,
-		createdBy: currentUser.uid,
-		createdAt: serverTimestamp(),
-	};
+    if (!currentUser) {
+        showNotification('Please log in to add tasks', 'error');
+        return;
+    }
 
-	try {
-		showButtonLoading(e.target.querySelector('button[type="submit"]'), true);
+    const todoData = {
+        title: document.getElementById('todoTitle').value,
+        dueDate: document.getElementById('todoDueDate').value,
+        notes: document.getElementById('todoNotes').value,
+        assignee: document.getElementById('todoAssignee').value,
+        completed: false,
+        workspaceId: currentWorkspace,
+        createdBy: currentUser.uid,
+        createdAt: serverTimestamp(),
+    };
 
-		await addDoc(collection(db, 'todos'), todoData);
-		showNotification('Task created!', 'success');
-		closeModal('todoModal');
-	} catch (error) {
-		console.error('Error saving todo:', error);
-		showNotification('Error saving task', 'error');
-	} finally {
-		showButtonLoading(e.target.querySelector('button[type="submit"]'), false);
-	}
+    try {
+        const button = e.target.querySelector('button[type="submit"]');
+        showButtonLoading(button, true);
+
+        const docRef = await addDoc(collection(db, 'todos'), todoData);
+        
+        // Create and animate the new task element
+        const todoElement = createTodoElement({ ...todoData, id: docRef.id });
+        todoElement.style.opacity = '0';
+        todoElement.style.transform = 'translateY(20px)';
+        
+        // Add to appropriate container
+        const container = todoData.assignee === 'shared' 
+            ? document.getElementById('shared-todos')
+            : (todoData.assignee === currentUser.uid 
+                ? document.getElementById('user1-todos')
+                : document.getElementById('user2-todos'));
+        
+        if (container) {
+            container.insertBefore(todoElement, container.firstChild);
+            // Trigger animation
+            requestAnimationFrame(() => {
+                todoElement.style.transition = 'all 0.3s ease';
+                todoElement.style.opacity = '1';
+                todoElement.style.transform = 'translateY(0)';
+            });
+        }
+
+        showNotification('Task created! 🎉', 'success');
+        closeModal('todoModal');
+        updateProgress(); // Update progress bar
+    } catch (error) {
+        console.error('Error saving todo:', error);
+        showNotification('Error saving task', 'error');
+    } finally {
+        showButtonLoading(e.target.querySelector('button[type="submit"]'), false);
+    }
 });
 
 // Todo Functions
+function updateProgress() {
+    const todos = $todos.get();
+    const totalTasks = todos.length;
+    const completedTasks = todos.filter(todo => todo.completed).length;
+    const progressPercentage = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
+
+    const progressFill = document.querySelector('.progress-fill');
+    const progressText = document.querySelector('.progress-text');
+    
+    if (progressFill && progressText) {
+        // Animate the progress bar
+        progressFill.style.transition = 'width 0.6s ease-in-out';
+        progressFill.style.width = `${progressPercentage}%`;
+        progressText.textContent = `${progressPercentage}% Complete (${completedTasks}/${totalTasks} tasks)`;
+    }
+}
+
 function renderTodos(todos) {
-	const currentUser = $currentUser.get();
-	console.log('Rendering todos for user:', currentUser?.uid);
+    const currentUser = $currentUser.get();
+    console.log('Rendering todos for user:', currentUser?.uid);
 
-	const user1Container = document.getElementById('user1-todos');
-	const user2Container = document.getElementById('user2-todos');
+    const user1Container = document.getElementById('user1-todos');
+    const user2Container = document.getElementById('user2-todos');
+    const sharedContainer = document.getElementById('shared-todos');
 
-	user1Container.innerHTML = '';
-	user2Container.innerHTML = '';
+    user1Container.innerHTML = '';
+    user2Container.innerHTML = '';
+    sharedContainer.innerHTML = '';
 
-	// Update section titles
-	document.getElementById('user1-todos-title').textContent = 'My Tasks';
-	document.getElementById('user2-todos-title').textContent = 'Shared Tasks';
+    // Update section titles with the new font
+    document.getElementById('user1-todos-title').textContent = 'My Tasks';
+    document.getElementById('user2-todos-title').textContent = 'Partner\'s Tasks';
 
-	todos.forEach((todo) => {
-		const todoElement = createTodoElement(todo);
+    // Update progress bar
+    updateProgress();
 
-		if (todo.assignee === currentUser.uid || todo.assignee === 'user1') {
-			user1Container.appendChild(todoElement.cloneNode(true));
-		} else if (todo.assignee === 'shared') {
-			user2Container.appendChild(todoElement.cloneNode(true));
-		}
-	});
+    // Calculate progress
+    const totalTasks = todos.length;
+    const completedTasks = todos.filter(todo => todo.completed).length;
+    const progressPercentage = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
+
+    // Update progress bar
+    const progressFill = document.querySelector('.progress-fill');
+    const progressText = document.querySelector('.progress-text');
+    
+    progressFill.style.width = `${progressPercentage}%`;
+    progressText.textContent = `${progressPercentage}% Complete (${completedTasks}/${totalTasks} tasks)`;
+
+    todos.forEach((todo) => {
+        const todoElement = createTodoElement(todo);
+
+        if (todo.assignee === currentUser.uid || todo.assignee === 'user1') {
+            user1Container.appendChild(todoElement.cloneNode(true));
+        } else if (todo.assignee === 'shared') {
+            sharedContainer.appendChild(todoElement.cloneNode(true));
+        } else {
+            user2Container.appendChild(todoElement.cloneNode(true));
+        }
+    });
 }
 
 function createTodoElement(todo) {
-	const div = document.createElement('div');
-	div.className = 'todo-item';
+    const div = document.createElement('div');
+    div.className = 'todo-item';
+    div.setAttribute('data-todo-id', todo.id);
 
-	const attachmentHtml = todo.attachmentUrl
-		? `<div class="todo-attachment" onclick="window.open('${todo.attachmentUrl}', '_blank')">
+    const attachmentHtml = todo.attachmentUrl
+        ? `<div class="todo-attachment" onclick="window.open('${todo.attachmentUrl}', '_blank')">
             📎 ${todo.attachmentName || 'Attachment'}
         </div>`
-		: '';
+        : '';
 
-	const dueDateHtml = todo.dueDate
-		? `<div class="todo-meta">Due: ${new Date(todo.dueDate).toLocaleDateString()}</div>`
-		: '';
+    const dueDateHtml = todo.dueDate
+        ? `<div class="todo-meta">Due: ${new Date(todo.dueDate).toLocaleDateString()}</div>`
+        : '';
 
-	div.innerHTML = `
+    const deleteButtonHtml = todo.completed 
+        ? `<button class="delete-todo-btn" onclick="deleteTodo('${todo.id}')">Delete</button>`
+        : '';
+
+    div.innerHTML = `
         <div class="todo-checkbox ${todo.completed ? 'checked' : ''}" onclick="toggleTodo('${todo.id}')"></div>
         <div class="todo-text ${todo.completed ? 'completed' : ''}">
             <strong>${todo.title}</strong>
             ${todo.notes ? `<div class="todo-meta">${todo.notes}</div>` : ''}
             ${dueDateHtml}
             ${attachmentHtml}
+            ${deleteButtonHtml}
         </div>
     `;
-	return div;
+    return div;
 }
 
 async function toggleTodo(todoId) {
-	const todo = todos.find((t) => t.id === todoId);
-	if (todo) {
-		try {
-			await updateDoc(doc(db, 'todos', todoId), {
-				completed: !todo.completed,
-				updatedAt: serverTimestamp(),
-			});
+    const todo = $todos.get().find((t) => t.id === todoId);
+    if (todo) {
+        try {
+            const todoElements = document.querySelectorAll(`[data-todo-id="${todoId}"]`);
+            
+            // Animate completion
+            todoElements.forEach(element => {
+                element.classList.add('completing');
+            });
 
-			if (!todo.completed) {
-				showNotification('Task completed! 🎉', 'success');
-			}
-		} catch (error) {
-			console.error('Error updating todo:', error);
-			showNotification('Error updating task', 'error');
-		}
-	}
+            // Wait for animation
+            await new Promise(resolve => setTimeout(resolve, 500));
+
+            // Update the todo
+            await updateDoc(doc(db, 'todos', todoId), {
+                completed: !todo.completed,
+                updatedAt: serverTimestamp(),
+            });
+
+            // If completing the todo, add delete button
+            if (!todo.completed) {
+                todoElements.forEach(element => {
+                    const todoText = element.querySelector('.todo-text');
+                    const deleteBtn = document.createElement('button');
+                    deleteBtn.className = 'delete-todo-btn';
+                    deleteBtn.innerHTML = 'Delete';
+                    deleteBtn.onclick = () => deleteTodo(todoId);
+                    todoText.appendChild(deleteBtn);
+                });
+            }
+
+            if (!todo.completed) {
+                showNotification('Task completed! 🎉', 'success');
+            }
+        } catch (error) {
+            console.error('Error updating todo:', error);
+            showNotification('Error updating task', 'error');
+        }
+    }
+}
+
+async function deleteTodo(todoId) {
+    try {
+        const todoElements = document.querySelectorAll(`[data-todo-id="${todoId}"]`);
+        
+        // Animate removal
+        todoElements.forEach(element => {
+            element.classList.add('removing');
+        });
+
+        // Wait for animation
+        await new Promise(resolve => setTimeout(resolve, 500));
+
+        // Delete from database
+        await deleteDoc(doc(db, 'todos', todoId));
+        showNotification('Task deleted', 'success');
+
+        // Update progress
+        updateProgress();
+    } catch (error) {
+        console.error('Error deleting todo:', error);
+        showNotification('Error deleting task', 'error');
+    }
+}
+
+function showThemeModal() {
+    openModal('themeModal');
+}
+
+async function setTheme(themeName) {
+    const currentUser = $currentUser.get();
+    if (!currentUser) return;
+
+    try {
+        // Update theme in database
+        await updateDoc(doc(db, 'users', currentUser.uid), {
+            theme: themeName
+        });
+
+        // Update UI
+        document.body.setAttribute('data-theme', themeName);
+        
+        // Update active state in theme modal
+        document.querySelectorAll('.theme-card').forEach(card => {
+            card.classList.toggle('active', card.dataset.theme === themeName);
+        });
+
+        // Save to localStorage for persistence
+        localStorage.setItem('selectedTheme', themeName);
+        
+        showNotification('Theme updated! 🎨', 'success');
+    } catch (error) {
+        console.error('Error updating theme:', error);
+        showNotification('Error updating theme', 'error');
+    }
+}
+
+// Load saved theme on startup
+function loadSavedTheme() {
+    const savedTheme = localStorage.getItem('selectedTheme');
+    if (savedTheme) {
+        document.body.setAttribute('data-theme', savedTheme);
+    }
 }
 
 // Invite System
@@ -841,14 +1182,188 @@ function generateInviteCode() {
 }
 
 function updateUserAvatar() {
-	const currentUser = $currentUser.get();
-	const avatar = document.getElementById('current-user-avatar');
-	if (currentUser.displayName) {
-		avatar.textContent = currentUser.displayName.charAt(0).toUpperCase();
-	} else if (currentUser.email) {
-		avatar.textContent = currentUser.email.charAt(0).toUpperCase();
-	}
+    const currentUser = $currentUser.get();
+    const avatar = document.getElementById('current-user-avatar');
+    if (currentUser.displayName) {
+        avatar.textContent = currentUser.displayName.charAt(0).toUpperCase();
+    } else if (currentUser.email) {
+        avatar.textContent = currentUser.email.charAt(0).toUpperCase();
+    }
+
+    // Make avatar clickable to open settings
+    avatar.style.cursor = 'pointer';
+    avatar.onclick = () => openSettings();
 }
+
+async function openSettings() {
+    const currentUser = $currentUser.get();
+    if (!currentUser) return;
+
+    try {
+        // Fetch user data
+        const userDoc = await getDoc(doc(db, 'users', currentUser.uid));
+        const userData = userDoc.data();
+
+        if (userData) {
+            document.getElementById('settings-name').value = userData.displayName || currentUser.displayName || '';
+            document.getElementById('settings-birthday').value = userData.birthday || '';
+            document.getElementById('settings-bio').value = userData.bio || '';
+        }
+
+        // Set active theme
+        const themeCards = document.querySelectorAll('.theme-card');
+        themeCards.forEach(card => {
+            card.classList.remove('active');
+            if (card.dataset.theme === (userData?.theme || 'default')) {
+                card.classList.add('active');
+            }
+        });
+
+        openModal('settingsModal');
+    } catch (error) {
+        console.error('Error loading settings:', error);
+        showNotification('Error loading settings', 'error');
+    }
+}
+
+// Theme switching
+document.querySelectorAll('.theme-card').forEach(card => {
+    card.addEventListener('click', async () => {
+        const theme = card.dataset.theme;
+        const currentUser = $currentUser.get();
+        
+        try {
+            // Update theme in database
+            await updateDoc(doc(db, 'users', currentUser.uid), {
+                theme: theme
+            });
+
+            // Update UI
+            document.body.setAttribute('data-theme', theme);
+            document.querySelectorAll('.theme-card').forEach(c => c.classList.remove('active'));
+            card.classList.add('active');
+            
+            showNotification('Theme updated! 🎨', 'success');
+        } catch (error) {
+            console.error('Error updating theme:', error);
+            showNotification('Error updating theme', 'error');
+        }
+    });
+});
+
+function showMembersModal() {
+    openModal('membersModal');
+    renderMembersList();
+}
+
+async function renderMembersList() {
+    const membersList = document.getElementById('membersList');
+    membersList.innerHTML = '';
+
+    try {
+        // Get current workspace data
+        const workspaceDoc = await getDoc(doc(db, 'workspaces', currentWorkspace));
+        const workspaceData = workspaceDoc.data();
+        
+        // Get member details
+        const memberPromises = workspaceData.members.map(async memberId => {
+            const memberDoc = await getDoc(doc(db, 'users', memberId));
+            return {
+                id: memberId,
+                ...memberDoc.data()
+            };
+        });
+
+        const members = await Promise.all(memberPromises);
+        const isOwner = workspaceData.createdBy === auth.currentUser.uid;
+
+        members.forEach(member => {
+            const initials = member.displayName 
+                ? member.displayName.split(' ').map(n => n[0]).join('').toUpperCase()
+                : member.email[0].toUpperCase();
+
+            const memberItem = document.createElement('div');
+            memberItem.className = 'member-item';
+            memberItem.innerHTML = `
+                <div class="member-info">
+                    <div class="member-avatar">${initials}</div>
+                    <div class="member-details">
+                        <h4>${member.displayName || member.email}</h4>
+                        <p>${member.email}</p>
+                    </div>
+                </div>
+                ${isOwner && member.id !== auth.currentUser.uid ? 
+                    `<button class="remove-member-btn" onclick="removeMember('${member.id}')">
+                        Remove
+                    </button>` : ''}
+            `;
+
+            membersList.appendChild(memberItem);
+        });
+    } catch (error) {
+        console.error('Error rendering members:', error);
+        showNotification('Error loading members', 'error');
+    }
+}
+
+async function removeMember(memberId) {
+    try {
+        const workspaceDoc = await getDoc(doc(db, 'workspaces', currentWorkspace));
+        
+        if (!workspaceDoc.exists()) {
+            throw new Error('Workspace not found');
+        }
+
+        if (workspaceDoc.data().createdBy !== auth.currentUser.uid) {
+            throw new Error('Only workspace owner can remove members');
+        }
+
+        // Remove member from workspace
+        await updateDoc(doc(db, 'workspaces', currentWorkspace), {
+            members: workspaceDoc.data().members.filter(id => id !== memberId)
+        });
+
+        // Clear workspace ID from removed user's document
+        await updateDoc(doc(db, 'users', memberId), {
+            workspaceId: null
+        });
+
+        showNotification('Member removed successfully', 'success');
+        renderMembersList(); // Refresh the list
+    } catch (error) {
+        console.error('Error removing member:', error);
+        showNotification('Error removing member', 'error');
+    }
+}
+
+// Profile settings form
+document.getElementById('profile-settings-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const currentUser = $currentUser.get();
+    const button = e.target.querySelector('button');
+    
+    try {
+        showButtonLoading(button, true);
+        
+        const profileData = {
+            displayName: document.getElementById('settings-name').value,
+            birthday: document.getElementById('settings-birthday').value,
+            bio: document.getElementById('settings-bio').value,
+            updatedAt: serverTimestamp()
+        };
+
+        await updateProfile(currentUser, { displayName: profileData.displayName });
+        await setDoc(doc(db, 'users', currentUser.uid), profileData, { merge: true });
+
+        showNotification('Profile updated successfully! 👤', 'success');
+        updateUserAvatar();
+    } catch (error) {
+        console.error('Error updating profile:', error);
+        showNotification('Error updating profile', 'error');
+    } finally {
+        showButtonLoading(button, false);
+    }
+});
 
 function getErrorMessage(error) {
 	switch (error.code) {
@@ -1034,3 +1549,7 @@ window.signOut = signOut;
 window.showInviteModal = showInviteModal;
 window.showJoinModal = showJoinModal;
 window.copyInviteCode = copyInviteCode;
+window.showMembersModal = showMembersModal;
+window.removeMember = removeMember;
+window.showThemeModal = showThemeModal;
+window.setTheme = setTheme;
