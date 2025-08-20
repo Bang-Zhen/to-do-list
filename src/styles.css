@@ -1326,22 +1326,31 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover {
 }
 
 .todo-item .delete-todo-btn {
-    align-self: flex-start;
-    background: rgba(255, 87, 87, 0.1);
-    color: #ff5757;
+    background: transparent;
+    color: rgba(255, 87, 87, 0.5);
     border: none;
-    padding: 6px 12px;
-    border-radius: 6px;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
     cursor: pointer;
-    font-family: 'Outfit', sans-serif;
-    font-size: 13px;
-    transition: all 0.3s ease;
-    margin-top: 8px;
-    display: none;
+    font-size: 16px;
+    transition: all 0.2s ease;
+    padding: 0;
+    margin-left: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
 }
 
-.todo-text.completed .delete-todo-btn {
-    display: inline-block;
+.todo-item:hover .delete-todo-btn {
+    opacity: 1;
+}
+
+.todo-item .delete-todo-btn:hover {
+    color: #ff5757;
+    background: rgba(255, 87, 87, 0.1);
+    transform: scale(1.1);
 }
 
 .todo-item .delete-todo-btn:hover {

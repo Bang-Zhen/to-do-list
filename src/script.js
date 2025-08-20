@@ -372,7 +372,9 @@ document
 			};
 
 			console.log('Updating user document with data:', userData);
-			await setDoc(doc(db, 'users', currentUser.uid), userData);
+			// Set default theme and other user data
+userData.theme = 'cosmic';
+await setDoc(doc(db, 'users', currentUser.uid), userData);
 			console.log('User document updated');
 
 			currentWorkspace = workspaceRef.id;
@@ -414,7 +416,7 @@ async function loadWorkspace() {
 		// Load workspace data and start listeners
 		unsubscribeWorkspace = onSnapshot(
 			doc(db, 'workspaces', currentWorkspace),
-			(doc) => {
+			async (doc) => {
 				if (doc.exists()) {
 					const workspace = doc.data();
 					console.log('Workspace data loaded:', workspace);
@@ -422,10 +424,16 @@ async function loadWorkspace() {
 						workspace.name;
 					document.getElementById('workspace-subtitle').textContent =
 						`${workspace.members.length} member(s)`;
-					document.body.setAttribute(
-						'data-theme',
-						workspace.theme || 'default',
-					);
+					
+					// Get user's theme preference
+					const currentUser = auth.currentUser;
+					const userDoc = await getDoc(doc(db, 'users', currentUser.uid));
+					const userTheme = userDoc.exists() ? userDoc.data().theme : null;
+					const savedTheme = localStorage.getItem('selectedTheme');
+					const themeToApply = userTheme || savedTheme || 'cosmic';
+					
+					document.body.setAttribute('data-theme', themeToApply);
+					localStorage.setItem('selectedTheme', themeToApply);
 
 					// Update invite code
 					document.getElementById('invite-code-text').textContent =
@@ -466,7 +474,7 @@ function setupEventListener() {
 	const eventsQuery = query(
 		collection(db, 'events'),
 		where('workspaceId', '==', currentWorkspace),
-		orderBy('date', 'asc'),
+		orderBy('startDate', 'asc'),
 	);
 
 	unsubscribeEvents = onSnapshot(eventsQuery, (snapshot) => {
@@ -778,43 +786,19 @@ document.getElementById('eventForm').addEventListener('submit', async (e) => {
             showNotification('Event updated!', 'success');
         } else {
             // Create new event
-            const docRef = await addDoc(collection(db, 'events'), eventData);
+            await addDoc(collection(db, 'events'), eventData);
             showNotification('Event created!', 'success');
         }
 
         closeModal('eventModal');
         delete e.target.dataset.editingId;
+        generateCalendar(currentDate); // Refresh the calendar
     } catch (error) {
         console.error('Error saving event:', error);
         showNotification('Error saving event', 'error');
     } finally {
         showButtonLoading(button, false);
     }
-
-	try {
-		showButtonLoading(e.target.querySelector('button[type="submit"]'), true);
-
-		const editingId = e.target.dataset.editingId;
-
-		if (editingId) {
-			// Update existing event
-			await updateDoc(doc(db, 'events', editingId), eventData);
-			showNotification('Event updated!', 'success');
-		} else {
-			// Create new event
-			eventData.createdAt = serverTimestamp();
-			await addDoc(collection(db, 'events'), eventData);
-			showNotification('Event created!', 'success');
-		}
-
-		closeModal('eventModal');
-		delete e.target.dataset.editingId;
-	} catch (error) {
-		console.error('Error saving event:', error);
-		showNotification('Error saving event', 'error');
-	} finally {
-		showButtonLoading(e.target.querySelector('button[type="submit"]'), false);
-	}
 });
 
 // Todo Form Handler
@@ -955,10 +939,6 @@ function createTodoElement(todo) {
         ? `<div class="todo-meta">Due: ${new Date(todo.dueDate).toLocaleDateString()}</div>`
         : '';
 
-    const deleteButtonHtml = todo.completed 
-        ? `<button class="delete-todo-btn" onclick="deleteTodo('${todo.id}')">Delete</button>`
-        : '';
-
     div.innerHTML = `
         <div class="todo-checkbox ${todo.completed ? 'checked' : ''}" onclick="toggleTodo('${todo.id}')"></div>
         <div class="todo-text ${todo.completed ? 'completed' : ''}">
@@ -966,8 +946,8 @@ function createTodoElement(todo) {
             ${todo.notes ? `<div class="todo-meta">${todo.notes}</div>` : ''}
             ${dueDateHtml}
             ${attachmentHtml}
-            ${deleteButtonHtml}
         </div>
+        <button class="delete-todo-btn" onclick="deleteTodo('${todo.id}')">🗑️</button>
     `;
     return div;
 }
@@ -1015,6 +995,10 @@ async function toggleTodo(todoId) {
 }
 
 async function deleteTodo(todoId) {
+    if (!confirm('Are you sure you want to delete this task?')) {
+        return;
+    }
+
     try {
         const todoElements = document.querySelectorAll(`[data-todo-id="${todoId}"]`);
         
@@ -1028,13 +1012,23 @@ async function deleteTodo(todoId) {
 
         // Delete from database
         await deleteDoc(doc(db, 'todos', todoId));
-        showNotification('Task deleted', 'success');
 
-        // Update progress
+        // Remove elements from DOM
+        todoElements.forEach(element => {
+            if (element && element.parentNode) {
+                element.parentNode.removeChild(element);
+            }
+        });
+
+        showNotification('Task deleted', 'success');
         updateProgress();
     } catch (error) {
         console.error('Error deleting todo:', error);
         showNotification('Error deleting task', 'error');
+        // Revert animation if deletion fails
+        todoElements.forEach(element => {
+            element.classList.remove('removing');
+        });
     }
 }
 
@@ -1072,9 +1066,24 @@ async function setTheme(themeName) {
 
 // Load saved theme on startup
 function loadSavedTheme() {
+    // Check for saved theme in localStorage
     const savedTheme = localStorage.getItem('selectedTheme');
-    if (savedTheme) {
-        document.body.setAttribute('data-theme', savedTheme);
+    // Set cosmic as default if no theme is saved
+    const themeToApply = savedTheme || 'cosmic';
+    document.body.setAttribute('data-theme', themeToApply);
+    
+    // Update theme in user settings if logged in
+    const currentUser = auth.currentUser;
+    if (currentUser) {
+        getDoc(doc(db, 'users', currentUser.uid)).then(userDoc => {
+            if (userDoc.exists() && !userDoc.data().theme) {
+                updateDoc(doc(db, 'users', currentUser.uid), {
+                    theme: themeToApply
+                });
+            }
+        }).catch(error => {
+            console.error('Error checking user theme:', error);
+        });
     }
 }
 
@@ -1210,15 +1219,6 @@ async function openSettings() {
             document.getElementById('settings-bio').value = userData.bio || '';
         }
 
-        // Set active theme
-        const themeCards = document.querySelectorAll('.theme-card');
-        themeCards.forEach(card => {
-            card.classList.remove('active');
-            if (card.dataset.theme === (userData?.theme || 'default')) {
-                card.classList.add('active');
-            }
-        });
-
         openModal('settingsModal');
     } catch (error) {
         console.error('Error loading settings:', error);
@@ -1353,8 +1353,11 @@ document.getElementById('profile-settings-form').addEventListener('submit', asyn
         };
 
         await updateProfile(currentUser, { displayName: profileData.displayName });
-        await setDoc(doc(db, 'users', currentUser.uid), profileData, { merge: true });
+        await updateDoc(doc(db, 'users', currentUser.uid), profileData);
 
+        // Update displayed name and avatar
+        document.getElementById('user-name').textContent = profileData.displayName || currentUser.displayName || '';
+        closeModal('settingsModal');
         showNotification('Profile updated successfully! 👤', 'success');
         updateUserAvatar();
     } catch (error) {

@@ -249,48 +249,28 @@
         <div id="settingsModal" class="modal">
             <div class="modal-content settings-container">
                 <div class="modal-header">
-                    <h3 class="modal-title">Settings & Profile</h3>
+                    <h3 class="modal-title">Profile Settings</h3>
                     <button class="close-btn" onclick="closeModal('settingsModal')">&times;</button>
                 </div>
-                <div class="settings-grid">
-                    <div class="settings-section">
-                        <h3>Profile Information</h3>
-                        <form id="profile-settings-form">
-                            <div class="form-group">
-                                <label>Display Name</label>
-                                <input type="text" id="settings-name" required>
-                            </div>
-                            <div class="form-group">
-                                <label>Birthday</label>
-                                <input type="date" id="settings-birthday" required>
-                            </div>
-                            <div class="form-group">
-                                <label>Bio</label>
-                                <textarea id="settings-bio" rows="3"></textarea>
-                            </div>
-                            <button type="submit" class="btn btn-primary">
-                                <span>Save Profile</span>
-                                <span class="button-loader" style="display: none;"></span>
-                            </button>
-                        </form>
-                    </div>
-                    <div class="settings-section">
-                        <h3>Theme Selection</h3>
-                        <div class="theme-grid">
-                            <div class="theme-card" data-theme="default">
-                                <div class="theme-preview theme-default"></div>
-                                <span>Ocean</span>
-                            </div>
-                            <div class="theme-card" data-theme="sunset">
-                                <div class="theme-preview theme-sunset"></div>
-                                <span>Sunset</span>
-                            </div>
-                            <div class="theme-card" data-theme="forest">
-                                <div class="theme-preview theme-forest"></div>
-                                <span>Forest</span>
-                            </div>
+                <div class="settings-section">
+                    <form id="profile-settings-form">
+                        <div class="form-group">
+                            <label>Display Name</label>
+                            <input type="text" id="settings-name" required>
                         </div>
-                    </div>
+                        <div class="form-group">
+                            <label>Birthday</label>
+                            <input type="date" id="settings-birthday" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Bio</label>
+                            <textarea id="settings-bio" rows="3"></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-primary">
+                            <span>Save Profile</span>
+                            <span class="button-loader" style="display: none;"></span>
+                        </button>
+                    </form>
                 </div>
             </div>
         </div>
