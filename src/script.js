@@ -1,5 +1,4 @@
 // Firebase imports - these are loaded from the HTML
-import { auth, db } from './lib/fb';
 
 // Import Firebase functions
 import {
@@ -11,7 +10,6 @@ import {
 	signInWithPopup,
 	updateProfile,
 } from 'firebase/auth';
-
 import {
 	addDoc,
 	collection,
@@ -27,8 +25,9 @@ import {
 	updateDoc,
 	where,
 } from 'firebase/firestore';
+import { auth, db } from './lib/fb';
 
-import { $todos, setTodos, $currentUser, setCurrentUser } from './lib/stores';
+import { $currentUser, $todos, setCurrentUser, setTodos } from './lib/stores';
 
 const currentDate = new Date();
 
@@ -57,44 +56,44 @@ $currentUser.subscribe((user) => {
 });
 
 window.addEventListener('load', () => {
-    initializeApp();
-    loadSavedTheme();
+	initializeApp();
+	loadSavedTheme();
 });
 
 // Authentication Functions
 function initializeApp() {
-    console.log('Initializing app...');
-    showLoadingScreen();
+	console.log('Initializing app...');
+	showLoadingScreen();
 
-    // Show auth modal by default until we confirm a user is logged in
-    showAuthModal();
+	// Show auth modal by default until we confirm a user is logged in
+	showAuthModal();
 
-    onAuthStateChanged(auth, async (user) => {
-        console.log(
-            'Auth state changed:',
-            user ? 'User logged in' : 'User logged out',
-        );
-        hideLoadingScreen();
+	onAuthStateChanged(auth, async (user) => {
+		console.log(
+			'Auth state changed:',
+			user ? 'User logged in' : 'User logged out',
+		);
+		hideLoadingScreen();
 
-        if (user) {
-            hideAuthModal();
-            setCurrentUser(user);
-            
-            // Check if user has completed profile
-            const userDoc = await getDoc(doc(db, 'users', user.uid));
-            if (!userDoc.exists() || !userDoc.data().profileCompleted) {
-                showProfileSetup();
-            }
-        } else {
-            setCurrentUser(null);
-            showAuthModal();
-            hideMainApp();
-        }
-    });
+		if (user) {
+			hideAuthModal();
+			setCurrentUser(user);
+
+			// Check if user has completed profile
+			const userDoc = await getDoc(doc(db, 'users', user.uid));
+			if (!userDoc.exists() || !userDoc.data().profileCompleted) {
+				showProfileSetup();
+			}
+		} else {
+			setCurrentUser(null);
+			showAuthModal();
+			hideMainApp();
+		}
+	});
 }
 
 function showProfileSetup() {
-    const profileHTML = `
+	const profileHTML = `
         <div class="modal active" id="profile-modal">
             <div class="modal-content">
                 <div class="modal-header">
@@ -127,40 +126,49 @@ function showProfileSetup() {
         </div>
     `;
 
-    // Add the profile modal to the document
-    const div = document.createElement('div');
-    div.innerHTML = profileHTML;
-    document.body.appendChild(div.firstChild);
+	// Add the profile modal to the document
+	const div = document.createElement('div');
+	div.innerHTML = profileHTML;
+	document.body.appendChild(div.firstChild);
 
-    // Add event listener for form submission
-    document.getElementById('profile-form').addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const button = e.target.querySelector('button');
-        showButtonLoading(button, true);
+	// Add event listener for form submission with a small delay to ensure DOM is ready
+	setTimeout(() => {
+		const profileForm = document.getElementById('profile-form');
+		if (profileForm) {
+			profileForm.addEventListener('submit', async (e) => {
+				e.preventDefault();
+				const button = e.target.querySelector('button');
+				showButtonLoading(button, true);
 
-        try {
-            const currentUser = $currentUser.get();
-            const profileData = {
-                displayName: document.getElementById('profile-name').value,
-                birthday: document.getElementById('profile-birthday').value,
-                bio: document.getElementById('profile-bio').value,
-                profileCompleted: true,
-                updatedAt: serverTimestamp()
-            };
+				try {
+					const currentUser = $currentUser.get();
+					const profileData = {
+						displayName: document.getElementById('profile-name').value,
+						birthday: document.getElementById('profile-birthday').value,
+						bio: document.getElementById('profile-bio').value,
+						profileCompleted: true,
+						updatedAt: serverTimestamp(),
+					};
 
-            await updateProfile(currentUser, { displayName: profileData.displayName });
-            await setDoc(doc(db, 'users', currentUser.uid), profileData, { merge: true });
+					await updateProfile(currentUser, {
+						displayName: profileData.displayName,
+					});
+					await setDoc(doc(db, 'users', currentUser.uid), profileData, {
+						merge: true,
+					});
 
-            document.getElementById('profile-modal').remove();
-            showNotification('Profile updated successfully!', 'success');
-            updateUserAvatar();
-        } catch (error) {
-            console.error('Error updating profile:', error);
-            showNotification('Error updating profile', 'error');
-        } finally {
-            showButtonLoading(button, false);
-        }
-    });
+					document.getElementById('profile-modal').remove();
+					showNotification('Profile updated successfully!', 'success');
+					updateUserAvatar();
+				} catch (error) {
+					console.error('Error updating profile:', error);
+					showNotification('Error updating profile', 'error');
+				} finally {
+					showButtonLoading(button, false);
+				}
+			});
+		}
+	}, 100);
 }
 
 function showLoadingScreen() {
@@ -297,7 +305,7 @@ async function checkUserWorkspace(currentUser) {
 		}
 	} catch (error) {
 		console.error('Error checking workspace:', error);
-		showNotification('Error checking workspace: ' + error.message, 'error');
+		showNotification(`Error checking workspace: ${error.message}`, 'error');
 		showWorkspaceSetup();
 	}
 }
@@ -373,8 +381,8 @@ document
 
 			console.log('Updating user document with data:', userData);
 			// Set default theme and other user data
-userData.theme = 'cosmic';
-await setDoc(doc(db, 'users', currentUser.uid), userData);
+			userData.theme = 'cosmic';
+			await setDoc(doc(db, 'users', currentUser.uid), userData);
 			console.log('User document updated');
 
 			currentWorkspace = workspaceRef.id;
@@ -416,22 +424,22 @@ async function loadWorkspace() {
 		// Load workspace data and start listeners
 		unsubscribeWorkspace = onSnapshot(
 			doc(db, 'workspaces', currentWorkspace),
-			async (doc) => {
-				if (doc.exists()) {
-					const workspace = doc.data();
+			async (docSnapshot) => {
+				if (docSnapshot.exists()) {
+					const workspace = docSnapshot.data();
 					console.log('Workspace data loaded:', workspace);
 					document.getElementById('workspace-title').textContent =
 						workspace.name;
 					document.getElementById('workspace-subtitle').textContent =
 						`${workspace.members.length} member(s)`;
-					
+
 					// Get user's theme preference
 					const currentUser = auth.currentUser;
 					const userDoc = await getDoc(doc(db, 'users', currentUser.uid));
 					const userTheme = userDoc.exists() ? userDoc.data().theme : null;
 					const savedTheme = localStorage.getItem('selectedTheme');
 					const themeToApply = userTheme || savedTheme || 'cosmic';
-					
+
 					document.body.setAttribute('data-theme', themeToApply);
 					localStorage.setItem('selectedTheme', themeToApply);
 
@@ -454,7 +462,7 @@ async function loadWorkspace() {
 		console.log('Workspace loaded successfully');
 	} catch (error) {
 		console.error('Error loading workspace:', error);
-		showNotification('Error loading workspace: ' + error.message, 'error');
+		showNotification(`Error loading workspace: ${error.message}`, 'error');
 	}
 }
 
@@ -471,23 +479,60 @@ function updatePartnerInfo(members) {
 
 // Real-time Event Listener
 function setupEventListener() {
+	console.log('Setting up event listener for workspace:', currentWorkspace);
+
+	if (!currentWorkspace) {
+		console.error('No current workspace set for event listener');
+		return;
+	}
+
 	const eventsQuery = query(
 		collection(db, 'events'),
 		where('workspaceId', '==', currentWorkspace),
 		orderBy('startDate', 'asc'),
 	);
 
-	unsubscribeEvents = onSnapshot(eventsQuery, (snapshot) => {
-		events = snapshot.docs.map((doc) => ({
-			id: doc.id,
-			...doc.data(),
-		}));
+	console.log('Event query created:', eventsQuery);
 
-		if (
-			!document.getElementById('calendar-view').classList.contains('hidden')
-		) {
-			generateCalendar(currentDate);
-		}
+	unsubscribeEvents = onSnapshot(eventsQuery, (snapshot) => {
+		console.log('Event snapshot received. Docs count:', snapshot.docs.length);
+		const newEvents = snapshot.docs.map((doc) => {
+			const data = doc.data();
+			console.log('Processing event doc:', doc.id, data);
+			return {
+				id: doc.id,
+				...data,
+				startDate: data.startDate || '',
+				endDate: data.endDate || data.startDate || '',
+			};
+		});
+
+		console.log('Event listener triggered. Events count:', newEvents.length);
+		console.log('Events data:', newEvents);
+
+		events = newEvents;
+
+		const calendarView = document.getElementById('calendar-view');
+		const isCalendarVisible =
+			calendarView && !calendarView.classList.contains('hidden');
+		console.log('Calendar view visible:', isCalendarVisible);
+
+		// Always regenerate calendar when events change to ensure new events appear
+		// regardless of which tab is currently active
+		console.log('Regenerating calendar with new events');
+		console.log('Total events to render:', events.length);
+		events.forEach((event, index) => {
+			console.log(`Event ${index + 1}:`, {
+				id: event.id,
+				title: event.title,
+				startDate: event.startDate,
+				endDate: event.endDate,
+				workspaceId: event.workspaceId
+			});
+		});
+		generateCalendar(currentDate);
+	}, (error) => {
+		console.error('Error in event listener:', error);
 	});
 }
 
@@ -500,7 +545,7 @@ function setupTodoListener() {
 	);
 
 	unsubscribeTodos = onSnapshot(todosQuery, (snapshot) => {
-		let _todos = snapshot.docs.map((doc) => ({
+		const _todos = snapshot.docs.map((doc) => ({
 			id: doc.id,
 			...doc.data(),
 		}));
@@ -511,148 +556,182 @@ function setupTodoListener() {
 
 // Calendar Functions
 function generateCalendar(date) {
-    const grid = document.getElementById('calendarGrid');
-    const monthYear = document.getElementById('monthYear');
+	const grid = document.getElementById('calendarGrid');
+	const monthYear = document.getElementById('monthYear');
 
-    const year = date.getFullYear();
-    const month = date.getMonth();
+	const year = date.getFullYear();
+	const month = date.getMonth();
 
-    monthYear.textContent = new Intl.DateTimeFormat('en-US', {
-        month: 'long',
-        year: 'numeric',
-    }).format(date);
+	monthYear.textContent = new Intl.DateTimeFormat('en-US', {
+		month: 'long',
+		year: 'numeric',
+	}).format(date);
 
-    grid.innerHTML = '';
+	grid.innerHTML = '';
 
-    // Day headers
-    const dayHeaders = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-    dayHeaders.forEach((day) => {
-        const header = document.createElement('div');
-        header.className = 'day-header';
-        header.textContent = day;
-        grid.appendChild(header);
-    });
+	// Day headers
+	const dayHeaders = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+	dayHeaders.forEach((day) => {
+		const header = document.createElement('div');
+		header.className = 'day-header';
+		header.textContent = day;
+		grid.appendChild(header);
+	});
 
-    // Generate calendar days
-    const firstDay = new Date(year, month, 1).getDay();
-    const daysInMonth = new Date(year, month + 1, 0).getDate();
-    const daysInPrevMonth = new Date(year, month, 0).getDate();
+	// Generate calendar days
+	const firstDay = new Date(year, month, 1).getDay();
+	const daysInMonth = new Date(year, month + 1, 0).getDate();
+	const daysInPrevMonth = new Date(year, month, 0).getDate();
 
-    // Create array to store all calendar days
-    const calendarDays = [];
+	// Create array to store all calendar days
+	const calendarDays = [];
 
-    // Previous month's trailing days
-    for (let i = firstDay - 1; i >= 0; i--) {
-        const dayElement = document.createElement('div');
-        dayElement.className = 'calendar-day other-month';
-        dayElement.innerHTML = `
+	// Previous month's trailing days
+	for (let i = firstDay - 1; i >= 0; i--) {
+		const dayElement = document.createElement('div');
+		dayElement.className = 'calendar-day other-month';
+		dayElement.innerHTML = `
             <div class="day-number">${daysInPrevMonth - i}</div>
             <div class="day-events"></div>
         `;
-        calendarDays.push(dayElement);
-    }
+		calendarDays.push(dayElement);
+	}
 
-    // Current month's days
-    const today = new Date();
-    for (let day = 1; day <= daysInMonth; day++) {
-        const dayElement = document.createElement('div');
-        const currentDateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+	// Current month's days
+	const today = new Date();
+	for (let day = 1; day <= daysInMonth; day++) {
+		const dayElement = document.createElement('div');
+		const currentDateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
 
-        dayElement.className = 'calendar-day';
-        dayElement.dataset.date = currentDateStr;
-        
-        if (year === today.getFullYear() && month === today.getMonth() && day === today.getDate()) {
-            dayElement.classList.add('today');
-        }
+		dayElement.className = 'calendar-day';
+		dayElement.dataset.date = currentDateStr;
 
-        dayElement.innerHTML = `
+		if (
+			year === today.getFullYear() &&
+			month === today.getMonth() &&
+			day === today.getDate()
+		) {
+			dayElement.classList.add('today');
+		}
+
+		dayElement.innerHTML = `
             <div class="day-number">${day}</div>
             <div class="day-events"></div>
         `;
 
-        dayElement.addEventListener('click', (e) => {
-            if (!e.target.classList.contains('event-pill') && !e.target.classList.contains('event-span')) {
-                openEventModal(currentDateStr);
-            }
-        });
+		dayElement.addEventListener('click', (e) => {
+			if (
+				!e.target.classList.contains('event-pill') &&
+				!e.target.classList.contains('event-span')
+			) {
+				openEventModal(currentDateStr);
+			}
+		});
 
-        calendarDays.push(dayElement);
-    }
+		calendarDays.push(dayElement);
+	}
 
-    // Next month's leading days
-    const totalDays = calendarDays.length;
-    for (let day = 1; day <= 42 - totalDays; day++) {
-        const dayElement = document.createElement('div');
-        dayElement.className = 'calendar-day other-month';
-        dayElement.innerHTML = `
+	// Next month's leading days
+	const totalDays = calendarDays.length;
+	for (let day = 1; day <= 42 - totalDays; day++) {
+		const dayElement = document.createElement('div');
+		dayElement.className = 'calendar-day other-month';
+		dayElement.innerHTML = `
             <div class="day-number">${day}</div>
             <div class="day-events"></div>
         `;
-        calendarDays.push(dayElement);
-    }
+		calendarDays.push(dayElement);
+	}
 
-    // Add all days to the grid
-    calendarDays.forEach(day => grid.appendChild(day));
+	// Add all days to the grid
+	calendarDays.forEach((day) => grid.appendChild(day));
 
-    // Render single-day events
-    events.forEach(event => {
-        if (!event.endDate || event.startDate === event.endDate) {
-            const dayElement = grid.querySelector(`[data-date="${event.startDate}"]`);
-            if (dayElement) {
-                const eventsContainer = dayElement.querySelector('.day-events');
-                const eventElement = document.createElement('div');
-                eventElement.className = `event-pill ${event.shared ? 'shared' : ''} ${event.attachmentUrl ? 'has-attachment' : ''}`;
-                eventElement.textContent = event.title;
-                eventElement.onclick = () => openEventDetails(event.id);
-                eventsContainer.appendChild(eventElement);
-            }
-        }
-    });
+	// Render single-day events
+	console.log('Rendering events on calendar. Total events:', events.length);
+	events.forEach((event) => {
+		console.log('Processing event:', event);
+		if (!event.endDate || event.startDate === event.endDate) {
+			console.log('Looking for day element with date:', event.startDate);
+			const dayElement = grid.querySelector(`[data-date="${event.startDate}"]`);
+			console.log('Day element found:', dayElement ? 'YES' : 'NO');
+			if (dayElement) {
+				const eventsContainer = dayElement.querySelector('.day-events');
+				console.log('Events container found:', eventsContainer ? 'YES' : 'NO');
+				if (eventsContainer) {
+					const eventElement = document.createElement('div');
+					eventElement.className = `event-pill ${event.shared ? 'shared' : ''} ${event.attachmentUrl ? 'has-attachment' : ''}`;
+					eventElement.textContent = event.title || 'Untitled Event';
+					console.log('Created event element with title:', event.title);
 
-    // Render multi-day events
-    events.filter(event => event.endDate && event.startDate !== event.endDate).forEach(event => {
-        const startDate = new Date(event.startDate);
-        const endDate = new Date(event.endDate);
-        
-        let currentDate = new Date(startDate);
-        let weekStart = null;
-        let weekEnd = null;
-        let currentWeekSpan = null;
+					// Add click handler
+					eventElement.addEventListener('click', (e) => {
+						e.stopPropagation();
+						openEventDetails(event.id);
+					});
 
-        while (currentDate <= endDate) {
-            const dateStr = currentDate.toISOString().split('T')[0];
-            const dayElement = grid.querySelector(`[data-date="${dateStr}"]`);
-            
-            if (dayElement) {
-                const dayIndex = Array.from(grid.children).indexOf(dayElement) - 7; // Subtract header row
-                const weekIndex = Math.floor(dayIndex / 7);
-                
-                if (weekStart === null) {
-                    weekStart = dayIndex;
-                    weekEnd = weekStart + (6 - (weekStart % 7));
-                    
-                    currentWeekSpan = document.createElement('div');
-                    currentWeekSpan.className = `event-span ${event.shared ? 'shared' : ''} start`;
-                    currentWeekSpan.style.top = `${30 + (weekIndex * 80)}px`; // Adjust based on your calendar cell height
-                    currentWeekSpan.textContent = event.title;
-                    currentWeekSpan.onclick = () => openEventDetails(event.id);
-                    grid.appendChild(currentWeekSpan);
-                }
-                
-                // If we've reached the end of the week or the end date
-                if (dayIndex === weekEnd || dateStr === event.endDate) {
-                    currentWeekSpan.style.left = `${(weekStart % 7) * 14.28}%`;
-                    currentWeekSpan.style.width = `${((dayIndex - weekStart + 1) * 14.28)}%`;
-                    if (dateStr === event.endDate) currentWeekSpan.classList.add('end');
-                    
-                    weekStart = null;
-                    currentWeekSpan = null;
-                }
-            }
-            
-            currentDate.setDate(currentDate.getDate() + 1);
-        }
-    });
+					eventsContainer.appendChild(eventElement);
+					console.log('Event element appended to calendar successfully');
+				} else {
+					console.error('Events container not found in day element');
+				}
+			} else {
+				console.log('No day element found for date:', event.startDate);
+				// Let's see what dates are available in the calendar
+				const allDayElements = grid.querySelectorAll('[data-date]');
+				console.log('Available dates in calendar:');
+				allDayElements.forEach((el, index) => {
+					console.log(`  ${index + 1}: ${el.dataset.date}`);
+				});
+			}
+		}
+	});
+
+	// Render multi-day events
+	events
+		.filter((event) => event.endDate && event.startDate !== event.endDate)
+		.forEach((event) => {
+			const startDate = new Date(event.startDate);
+			const endDate = new Date(event.endDate);
+
+			const currentDate = new Date(startDate);
+			let weekStart = null;
+			let weekEnd = null;
+			let currentWeekSpan = null;
+
+			while (currentDate <= endDate) {
+				const dateStr = currentDate.toISOString().split('T')[0];
+				const dayElement = grid.querySelector(`[data-date="${dateStr}"]`);
+
+				if (dayElement) {
+					const dayIndex = Array.from(grid.children).indexOf(dayElement) - 7; // Subtract header row
+					const weekIndex = Math.floor(dayIndex / 7);
+
+					if (weekStart === null) {
+						weekStart = dayIndex;
+						weekEnd = weekStart + (6 - (weekStart % 7));
+
+						currentWeekSpan = document.createElement('div');
+						currentWeekSpan.className = `event-span ${event.shared ? 'shared' : ''} start`;
+						currentWeekSpan.style.top = `${30 + weekIndex * 80}px`; // Adjust based on your calendar cell height
+						currentWeekSpan.textContent = event.title;
+						currentWeekSpan.onclick = () => openEventDetails(event.id);
+						grid.appendChild(currentWeekSpan);
+					}
+
+					// If we've reached the end of the week or the end date
+					if (dayIndex === weekEnd || dateStr === event.endDate) {
+						currentWeekSpan.style.left = `${(weekStart % 7) * 14.28}%`;
+						currentWeekSpan.style.width = `${(dayIndex - weekStart + 1) * 14.28}%`;
+						if (dateStr === event.endDate) currentWeekSpan.classList.add('end');
+
+						weekStart = null;
+						currentWeekSpan = null;
+					}
+				}
+
+				currentDate.setDate(currentDate.getDate() + 1);
+			}
+		});
 }
 
 function changeMonth(direction) {
@@ -662,32 +741,32 @@ function changeMonth(direction) {
 
 // Tab Switching
 function switchTab(tab) {
-    const calendarView = document.getElementById('calendar-view');
-    const todoView = document.getElementById('todo-view');
-    const sharedView = document.getElementById('shared-view');
-    const tabBtns = document.querySelectorAll('.tab-btn');
+	const calendarView = document.getElementById('calendar-view');
+	const todoView = document.getElementById('todo-view');
+	const sharedView = document.getElementById('shared-view');
+	const tabBtns = document.querySelectorAll('.tab-btn');
 
-    // Remove active class from all views and tabs
-    calendarView.classList.add('hidden');
-    todoView.classList.remove('active');
-    sharedView.classList.remove('active');
-    tabBtns.forEach((btn) => btn.classList.remove('active'));
+	// Remove active class from all views and tabs
+	calendarView.classList.add('hidden');
+	todoView.classList.remove('active');
+	sharedView.classList.remove('active');
+	tabBtns.forEach((btn) => btn.classList.remove('active'));
 
-    // Activate the selected tab
-    switch(tab) {
-        case 'calendar':
-            calendarView.classList.remove('hidden');
-            tabBtns[0].classList.add('active');
-            break;
-        case 'todo':
-            todoView.classList.add('active');
-            tabBtns[1].classList.add('active');
-            break;
-        case 'shared':
-            sharedView.classList.add('active');
-            tabBtns[2].classList.add('active');
-            break;
-    }
+	// Activate the selected tab
+	switch (tab) {
+		case 'calendar':
+			calendarView.classList.remove('hidden');
+			tabBtns[0].classList.add('active');
+			break;
+		case 'todo':
+			todoView.classList.add('active');
+			tabBtns[1].classList.add('active');
+			break;
+		case 'shared':
+			sharedView.classList.add('active');
+			tabBtns[2].classList.add('active');
+			break;
+	}
 }
 
 // Modal Functions
@@ -711,21 +790,72 @@ function closeModal(modalId) {
 }
 
 function openEventModal(selectedDate = null) {
-    if (selectedDate) {
-        document.getElementById('eventStartDate').value = selectedDate;
-        document.getElementById('eventEndDate').value = selectedDate;
-    }
-    document.getElementById('event-modal-title').textContent = 'Add Event';
-    // Clear form fields
-    document.getElementById('eventTitle').value = '';
-    document.getElementById('eventStartDate').value = selectedDate || '';
-    document.getElementById('eventEndDate').value = selectedDate || '';
-    document.getElementById('eventTime').value = '';
-    document.getElementById('eventLocation').value = '';
-    document.getElementById('eventNotes').value = '';
-    document.getElementById('eventShared').checked = true;
-    document.getElementById('isMultiDay').checked = false;
-    openModal('eventModal');
+	console.log('Opening event modal with date:', selectedDate);
+
+	// Check if elements exist
+	const eventStartDate = document.getElementById('eventStartDate');
+	const eventEndDate = document.getElementById('eventEndDate');
+	const eventTitle = document.getElementById('eventTitle');
+	const eventTime = document.getElementById('eventTime');
+	const eventLocation = document.getElementById('eventLocation');
+	const eventNotes = document.getElementById('eventNotes');
+	const eventShared = document.getElementById('eventShared');
+
+	console.log('Form elements found:', {
+		eventStartDate: !!eventStartDate,
+		eventEndDate: !!eventEndDate,
+		eventTitle: !!eventTitle,
+		eventTime: !!eventTime,
+		eventLocation: !!eventLocation,
+		eventNotes: !!eventNotes,
+		eventShared: !!eventShared
+	});
+
+	// Clear form fields first
+	if (eventTitle) eventTitle.value = '';
+	if (eventStartDate) eventStartDate.value = '';
+	if (eventEndDate) eventEndDate.value = '';
+	if (eventTime) eventTime.value = '';
+	if (eventLocation) eventLocation.value = '';
+	if (eventNotes) eventNotes.value = '';
+	if (eventShared) eventShared.checked = true;
+
+	// Set dates if provided
+	if (selectedDate) {
+		console.log('Setting date values to:', selectedDate);
+		// Ensure the date is in YYYY-MM-DD format
+		let formattedDate = selectedDate;
+		if (selectedDate.includes('/')) {
+			// Convert from MM/DD/YYYY to YYYY-MM-DD if needed
+			const parts = selectedDate.split('/');
+			if (parts.length === 3) {
+				formattedDate = `${parts[2]}-${parts[0].padStart(2, '0')}-${parts[1].padStart(2, '0')}`;
+			}
+		}
+		console.log('Formatted date:', formattedDate);
+
+		if (eventStartDate) {
+			eventStartDate.value = formattedDate;
+			console.log('eventStartDate set to:', eventStartDate.value);
+		}
+		if (eventEndDate) {
+			eventEndDate.value = formattedDate;
+			console.log('eventEndDate set to:', eventEndDate.value);
+		}
+	}
+
+	const modalTitle = document.getElementById('event-modal-title');
+	if (modalTitle) modalTitle.textContent = 'Add Event';
+
+	// Setup date validation and open modal
+	setupDateValidation();
+	openModal('eventModal');
+
+	console.log('Final form values:', {
+		startDate: eventStartDate?.value,
+		endDate: eventEndDate?.value,
+		title: eventTitle?.value
+	});
 }
 
 function openTodoModal(assignee = null) {
@@ -758,333 +888,417 @@ function openEventDetails(eventId) {
 // Event Form Handler
 // addEvent
 document.getElementById('eventForm').addEventListener('submit', async (e) => {
+    console.log('Event form submit triggered!');
     e.preventDefault();
     const currentUser = $currentUser.get();
     const button = e.target.querySelector('button[type="submit"]');
 
+    console.log('Current user:', currentUser);
+    console.log('Form data:', {
+        title: document.getElementById('eventTitle').value,
+        startDate: document.getElementById('eventStartDate').value,
+        endDate: document.getElementById('eventEndDate').value,
+        time: document.getElementById('eventTime').value,
+        location: document.getElementById('eventLocation').value,
+        notes: document.getElementById('eventNotes').value,
+        shared: document.getElementById('eventShared').checked
+    });
+
     try {
         showButtonLoading(button, true);
-        const eventData = {
+
+        // Format dates properly
+        const startDate = document.getElementById('eventStartDate').value;
+        const endDate = document.getElementById('eventEndDate').value || startDate;
+
+        console.log('Event form submission - Raw date values:', {
+            startDate,
+            endDate,
             title: document.getElementById('eventTitle').value,
-            startDate: document.getElementById('eventStartDate').value,
-            endDate: document.getElementById('isMultiDay').checked ? document.getElementById('eventEndDate').value : document.getElementById('eventStartDate').value,
-            time: document.getElementById('eventTime').value,
-            location: document.getElementById('eventLocation').value,
-            notes: document.getElementById('eventNotes').value,
-            shared: document.getElementById('eventShared').checked,
-            workspaceId: currentWorkspace,
-            createdBy: currentUser.uid,
-            createdAt: serverTimestamp(),
-            updatedAt: serverTimestamp(),
-        };
+            currentWorkspace: currentWorkspace
+        });
 
-        const editingId = e.target.dataset.editingId;
-
-        if (editingId) {
-            // Update existing event
-            await updateDoc(doc(db, 'events', editingId), eventData);
-            showNotification('Event updated!', 'success');
-        } else {
-            // Create new event
-            await addDoc(collection(db, 'events'), eventData);
-            showNotification('Event created!', 'success');
+        // Validate dates
+        if (new Date(startDate) > new Date(endDate)) {
+            showCustomNotification('Start date cannot be after end date', 'error');
+            showButtonLoading(button, false);
+            return;
         }
 
-        closeModal('eventModal');
-        delete e.target.dataset.editingId;
-        generateCalendar(currentDate); // Refresh the calendar
-    } catch (error) {
-        console.error('Error saving event:', error);
-        showNotification('Error saving event', 'error');
-    } finally {
-        showButtonLoading(button, false);
-    }
+		const eventData = {
+			title: document.getElementById('eventTitle').value,
+			startDate: startDate,
+			endDate: endDate,
+			time: document.getElementById('eventTime').value,
+			location: document.getElementById('eventLocation').value,
+			notes: document.getElementById('eventNotes').value,
+			shared: document.getElementById('eventShared').checked,
+			workspaceId: currentWorkspace,
+			createdBy: currentUser.uid,
+			createdAt: serverTimestamp(),
+			updatedAt: serverTimestamp(),
+		};
+
+		const editingId = e.target.dataset.editingId;
+
+		if (editingId) {
+			// Update existing event
+			console.log('Updating existing event:', editingId, eventData);
+			await updateDoc(doc(db, 'events', editingId), eventData);
+			showNotification('Event updated!', 'success');
+		} else {
+			// Create new event
+			console.log('Creating new event:', eventData);
+			console.log('Event data to be saved:', {
+				title: eventData.title,
+				startDate: eventData.startDate,
+				endDate: eventData.endDate,
+				workspaceId: eventData.workspaceId,
+				createdBy: eventData.createdBy
+			});
+			const docRef = await addDoc(collection(db, 'events'), eventData);
+			console.log('Event created with ID:', docRef.id);
+			showNotification('Event created!', 'success');
+		}
+
+		closeModal('eventModal');
+		delete e.target.dataset.editingId;
+
+		// Wait a moment for the database to update
+		setTimeout(() => {
+			generateCalendar(currentDate); // Refresh the calendar
+		}, 500);
+	} catch (error) {
+		console.error('Error saving event:', error);
+		showNotification('Error saving event', 'error');
+	} finally {
+		showButtonLoading(button, false);
+	}
 });
 
 // Todo Form Handler
 // addTodo
 document.getElementById('todoForm').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const currentUser = $currentUser.get();
+	e.preventDefault();
+	const currentUser = $currentUser.get();
 
-    if (!currentUser) {
-        showNotification('Please log in to add tasks', 'error');
-        return;
-    }
+	if (!currentUser) {
+		showNotification('Please log in to add tasks', 'error');
+		return;
+	}
 
-    const todoData = {
-        title: document.getElementById('todoTitle').value,
-        dueDate: document.getElementById('todoDueDate').value,
-        notes: document.getElementById('todoNotes').value,
-        assignee: document.getElementById('todoAssignee').value,
-        completed: false,
-        workspaceId: currentWorkspace,
-        createdBy: currentUser.uid,
-        createdAt: serverTimestamp(),
-    };
+	const todoData = {
+		title: document.getElementById('todoTitle').value,
+		dueDate: document.getElementById('todoDueDate').value,
+		notes: document.getElementById('todoNotes').value,
+		assignee: document.getElementById('todoAssignee').value,
+		completed: false,
+		workspaceId: currentWorkspace,
+		createdBy: currentUser.uid,
+		createdAt: serverTimestamp(),
+	};
 
-    try {
-        const button = e.target.querySelector('button[type="submit"]');
-        showButtonLoading(button, true);
+	try {
+		const button = e.target.querySelector('button[type="submit"]');
+		showButtonLoading(button, true);
 
-        const docRef = await addDoc(collection(db, 'todos'), todoData);
-        
-        // Create and animate the new task element
-        const todoElement = createTodoElement({ ...todoData, id: docRef.id });
-        todoElement.style.opacity = '0';
-        todoElement.style.transform = 'translateY(20px)';
-        
-        // Add to appropriate container
-        const container = todoData.assignee === 'shared' 
-            ? document.getElementById('shared-todos')
-            : (todoData.assignee === currentUser.uid 
-                ? document.getElementById('user1-todos')
-                : document.getElementById('user2-todos'));
-        
-        if (container) {
-            container.insertBefore(todoElement, container.firstChild);
-            // Trigger animation
-            requestAnimationFrame(() => {
-                todoElement.style.transition = 'all 0.3s ease';
-                todoElement.style.opacity = '1';
-                todoElement.style.transform = 'translateY(0)';
-            });
-        }
+		const docRef = await addDoc(collection(db, 'todos'), todoData);
 
-        showNotification('Task created! 🎉', 'success');
-        closeModal('todoModal');
-        updateProgress(); // Update progress bar
-    } catch (error) {
-        console.error('Error saving todo:', error);
-        showNotification('Error saving task', 'error');
-    } finally {
-        showButtonLoading(e.target.querySelector('button[type="submit"]'), false);
-    }
+		// Create and animate the new task element
+		const todoElement = createTodoElement({ ...todoData, id: docRef.id });
+		todoElement.style.opacity = '0';
+		todoElement.style.transform = 'translateY(20px)';
+
+		// Add to appropriate container
+		const container =
+			todoData.assignee === 'shared'
+				? document.getElementById('shared-todos')
+				: todoData.assignee === currentUser.uid
+					? document.getElementById('user1-todos')
+					: document.getElementById('user2-todos');
+
+		if (container) {
+			container.insertBefore(todoElement, container.firstChild);
+			// Trigger animation
+			requestAnimationFrame(() => {
+				todoElement.style.transition = 'all 0.3s ease';
+				todoElement.style.opacity = '1';
+				todoElement.style.transform = 'translateY(0)';
+			});
+		}
+
+		showNotification('Task created! 🎉', 'success');
+		closeModal('todoModal');
+		updateProgress(); // Update progress bar
+	} catch (error) {
+		console.error('Error saving todo:', error);
+		showNotification('Error saving task', 'error');
+	} finally {
+		showButtonLoading(e.target.querySelector('button[type="submit"]'), false);
+	}
 });
 
 // Todo Functions
 function updateProgress() {
-    const todos = $todos.get();
-    const totalTasks = todos.length;
-    const completedTasks = todos.filter(todo => todo.completed).length;
-    const progressPercentage = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
+	const todos = $todos.get();
+	const totalTasks = todos.length;
+	const completedTasks = todos.filter((todo) => todo.completed).length;
+	const progressPercentage =
+		totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
 
-    const progressFill = document.querySelector('.progress-fill');
-    const progressText = document.querySelector('.progress-text');
-    
-    if (progressFill && progressText) {
-        // Animate the progress bar
-        progressFill.style.transition = 'width 0.6s ease-in-out';
-        progressFill.style.width = `${progressPercentage}%`;
-        progressText.textContent = `${progressPercentage}% Complete (${completedTasks}/${totalTasks} tasks)`;
-    }
+	const progressFill = document.querySelector('.progress-fill');
+	const progressText = document.querySelector('.progress-text');
+
+	if (progressFill && progressText) {
+		// Animate the progress bar
+		progressFill.style.transition = 'width 0.6s ease-in-out';
+		progressFill.style.width = `${progressPercentage}%`;
+		progressText.textContent = `${progressPercentage}% Complete (${completedTasks}/${totalTasks} tasks)`;
+	}
 }
 
 function renderTodos(todos) {
-    const currentUser = $currentUser.get();
-    console.log('Rendering todos for user:', currentUser?.uid);
+	const currentUser = $currentUser.get();
+	console.log('Rendering todos for user:', currentUser?.uid);
 
-    const user1Container = document.getElementById('user1-todos');
-    const user2Container = document.getElementById('user2-todos');
-    const sharedContainer = document.getElementById('shared-todos');
+	const user1Container = document.getElementById('user1-todos');
+	const user2Container = document.getElementById('user2-todos');
+	const sharedContainer = document.getElementById('shared-todos');
 
-    user1Container.innerHTML = '';
-    user2Container.innerHTML = '';
-    sharedContainer.innerHTML = '';
+	user1Container.innerHTML = '';
+	user2Container.innerHTML = '';
+	sharedContainer.innerHTML = '';
 
-    // Update section titles with the new font
-    document.getElementById('user1-todos-title').textContent = 'My Tasks';
-    document.getElementById('user2-todos-title').textContent = 'Partner\'s Tasks';
+	// Update section titles with the new font
+	document.getElementById('user1-todos-title').textContent = 'My Tasks';
+	document.getElementById('user2-todos-title').textContent = "Partner's Tasks";
 
-    // Update progress bar
-    updateProgress();
+	// Update progress bar
+	updateProgress();
 
-    // Calculate progress
-    const totalTasks = todos.length;
-    const completedTasks = todos.filter(todo => todo.completed).length;
-    const progressPercentage = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
+	// Calculate progress
+	const totalTasks = todos.length;
+	const completedTasks = todos.filter((todo) => todo.completed).length;
+	const progressPercentage =
+		totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
 
-    // Update progress bar
-    const progressFill = document.querySelector('.progress-fill');
-    const progressText = document.querySelector('.progress-text');
-    
-    progressFill.style.width = `${progressPercentage}%`;
-    progressText.textContent = `${progressPercentage}% Complete (${completedTasks}/${totalTasks} tasks)`;
+	// Update progress bar
+	const progressFill = document.querySelector('.progress-fill');
+	const progressText = document.querySelector('.progress-text');
 
-    todos.forEach((todo) => {
-        const todoElement = createTodoElement(todo);
+	progressFill.style.width = `${progressPercentage}%`;
+	progressText.textContent = `${progressPercentage}% Complete (${completedTasks}/${totalTasks} tasks)`;
 
-        if (todo.assignee === currentUser.uid || todo.assignee === 'user1') {
-            user1Container.appendChild(todoElement.cloneNode(true));
-        } else if (todo.assignee === 'shared') {
-            sharedContainer.appendChild(todoElement.cloneNode(true));
-        } else {
-            user2Container.appendChild(todoElement.cloneNode(true));
-        }
-    });
+	todos.forEach((todo) => {
+		const todoElement = createTodoElement(todo);
+
+		if (todo.assignee === currentUser.uid || todo.assignee === 'user1') {
+			user1Container.appendChild(todoElement.cloneNode(true));
+		} else if (todo.assignee === 'shared') {
+			sharedContainer.appendChild(todoElement.cloneNode(true));
+		} else {
+			user2Container.appendChild(todoElement.cloneNode(true));
+		}
+	});
 }
 
 function createTodoElement(todo) {
-    const div = document.createElement('div');
-    div.className = 'todo-item';
-    div.setAttribute('data-todo-id', todo.id);
+	const div = document.createElement('div');
+	div.className = 'todo-item';
+	div.setAttribute('data-todo-id', todo.id);
 
-    const attachmentHtml = todo.attachmentUrl
-        ? `<div class="todo-attachment" onclick="window.open('${todo.attachmentUrl}', '_blank')">
+	const attachmentHtml = todo.attachmentUrl
+		? `<div class="todo-attachment" onclick="window.open('${todo.attachmentUrl}', '_blank')">
             📎 ${todo.attachmentName || 'Attachment'}
         </div>`
-        : '';
+		: '';
 
-    const dueDateHtml = todo.dueDate
-        ? `<div class="todo-meta">Due: ${new Date(todo.dueDate).toLocaleDateString()}</div>`
-        : '';
+	const dueDateHtml = todo.dueDate
+		? `<div class="todo-meta">Due: ${new Date(todo.dueDate).toLocaleDateString()}</div>`
+		: '';
 
-    div.innerHTML = `
-        <div class="todo-checkbox ${todo.completed ? 'checked' : ''}" onclick="toggleTodo('${todo.id}')"></div>
+	// Create the structure
+	div.innerHTML = `
+        <div class="todo-checkbox ${todo.completed ? 'checked' : ''}"></div>
         <div class="todo-text ${todo.completed ? 'completed' : ''}">
             <strong>${todo.title}</strong>
             ${todo.notes ? `<div class="todo-meta">${todo.notes}</div>` : ''}
             ${dueDateHtml}
             ${attachmentHtml}
         </div>
-        <button class="delete-todo-btn" onclick="deleteTodo('${todo.id}')">🗑️</button>
+        <button class="delete-todo-btn" type="button" data-todo-id="${todo.id}" title="Delete task">🗑️</button>
     `;
-    return div;
+
+	// Add event listeners after the HTML is set
+	const checkbox = div.querySelector('.todo-checkbox');
+	const deleteBtn = div.querySelector('.delete-todo-btn');
+
+	console.log(
+		'Creating todo element for:',
+		todo.id,
+		'Delete button found:',
+		!!deleteBtn,
+	);
+
+	checkbox.addEventListener('click', () => toggleTodo(todo.id));
+	deleteBtn.addEventListener('click', (e) => {
+		console.log('Delete button clicked for todo:', todo.id);
+		e.stopPropagation();
+		deleteTodo(todo.id);
+	});
+
+	return div;
 }
 
 async function toggleTodo(todoId) {
-    const todo = $todos.get().find((t) => t.id === todoId);
-    if (todo) {
-        try {
-            const todoElements = document.querySelectorAll(`[data-todo-id="${todoId}"]`);
-            
-            // Animate completion
-            todoElements.forEach(element => {
-                element.classList.add('completing');
-            });
+	const todo = $todos.get().find((t) => t.id === todoId);
+	if (todo) {
+		try {
+			const todoElements = document.querySelectorAll(
+				`[data-todo-id="${todoId}"]`,
+			);
 
-            // Wait for animation
-            await new Promise(resolve => setTimeout(resolve, 500));
+			// Animate completion
+			todoElements.forEach((element) => {
+				element.classList.add('completing');
+			});
 
-            // Update the todo
-            await updateDoc(doc(db, 'todos', todoId), {
-                completed: !todo.completed,
-                updatedAt: serverTimestamp(),
-            });
+			// Wait for animation
+			await new Promise((resolve) => setTimeout(resolve, 500));
 
-            // If completing the todo, add delete button
-            if (!todo.completed) {
-                todoElements.forEach(element => {
-                    const todoText = element.querySelector('.todo-text');
-                    const deleteBtn = document.createElement('button');
-                    deleteBtn.className = 'delete-todo-btn';
-                    deleteBtn.innerHTML = 'Delete';
-                    deleteBtn.onclick = () => deleteTodo(todoId);
-                    todoText.appendChild(deleteBtn);
-                });
-            }
+			// Update the todo
+			await updateDoc(doc(db, 'todos', todoId), {
+				completed: !todo.completed,
+				updatedAt: serverTimestamp(),
+			});
 
-            if (!todo.completed) {
-                showNotification('Task completed! 🎉', 'success');
-            }
-        } catch (error) {
-            console.error('Error updating todo:', error);
-            showNotification('Error updating task', 'error');
-        }
-    }
+			// If completing the todo, add delete button
+			if (!todo.completed) {
+				todoElements.forEach((element) => {
+					const todoText = element.querySelector('.todo-text');
+					const deleteBtn = document.createElement('button');
+					deleteBtn.className = 'delete-todo-btn';
+					deleteBtn.innerHTML = 'Delete';
+					deleteBtn.onclick = () => deleteTodo(todoId);
+					todoText.appendChild(deleteBtn);
+				});
+			}
+
+			if (!todo.completed) {
+				showNotification('Task completed! 🎉', 'success');
+			}
+		} catch (error) {
+			console.error('Error updating todo:', error);
+			showNotification('Error updating task', 'error');
+		}
+	}
 }
 
 async function deleteTodo(todoId) {
-    if (!confirm('Are you sure you want to delete this task?')) {
-        return;
-    }
+	console.log('deleteTodo called with ID:', todoId);
 
-    try {
-        const todoElements = document.querySelectorAll(`[data-todo-id="${todoId}"]`);
-        
-        // Animate removal
-        todoElements.forEach(element => {
-            element.classList.add('removing');
-        });
+	if (!confirm('Are you sure you want to delete this task?')) {
+		console.log('Delete cancelled by user');
+		return;
+	}
 
-        // Wait for animation
-        await new Promise(resolve => setTimeout(resolve, 500));
+	try {
+		console.log('Attempting to delete todo from database:', todoId);
+		// First delete from database
+		await deleteDoc(doc(db, 'todos', todoId));
+		console.log('Successfully deleted todo from database:', todoId);
 
-        // Delete from database
-        await deleteDoc(doc(db, 'todos', todoId));
+		// Then handle UI updates
+		const todoElements = document.querySelectorAll(
+			`[data-todo-id="${todoId}"]`,
+		);
 
-        // Remove elements from DOM
-        todoElements.forEach(element => {
-            if (element && element.parentNode) {
-                element.parentNode.removeChild(element);
-            }
-        });
+		// Animate removal
+		todoElements.forEach((element) => {
+			element.classList.add('removing');
 
-        showNotification('Task deleted', 'success');
-        updateProgress();
-    } catch (error) {
-        console.error('Error deleting todo:', error);
-        showNotification('Error deleting task', 'error');
-        // Revert animation if deletion fails
-        todoElements.forEach(element => {
-            element.classList.remove('removing');
-        });
-    }
+			// Remove element after animation
+			setTimeout(() => {
+				if (element?.parentNode) {
+					element.parentNode.removeChild(element);
+				}
+			}, 500);
+		});
+
+		showCustomNotification('Task deleted successfully!', 'success');
+
+		// Update progress after a brief delay to ensure DOM is updated
+		setTimeout(() => {
+			updateProgress();
+		}, 600);
+	} catch (error) {
+		console.error('Error deleting todo:', error);
+		showNotification('Error deleting task', 'error');
+		// Revert animation if deletion fails
+		const todoElements = document.querySelectorAll(
+			`[data-todo-id="${todoId}"]`,
+		);
+		todoElements.forEach((element) => {
+			element.classList.remove('removing');
+		});
+	}
 }
 
 function showThemeModal() {
-    openModal('themeModal');
+	openModal('themeModal');
 }
 
 async function setTheme(themeName) {
-    const currentUser = $currentUser.get();
-    if (!currentUser) return;
+	const currentUser = $currentUser.get();
+	if (!currentUser) return;
 
-    try {
-        // Update theme in database
-        await updateDoc(doc(db, 'users', currentUser.uid), {
-            theme: themeName
-        });
+	try {
+		// Update theme in database
+		await updateDoc(doc(db, 'users', currentUser.uid), {
+			theme: themeName,
+		});
 
-        // Update UI
-        document.body.setAttribute('data-theme', themeName);
-        
-        // Update active state in theme modal
-        document.querySelectorAll('.theme-card').forEach(card => {
-            card.classList.toggle('active', card.dataset.theme === themeName);
-        });
+		// Update UI
+		document.body.setAttribute('data-theme', themeName);
 
-        // Save to localStorage for persistence
-        localStorage.setItem('selectedTheme', themeName);
-        
-        showNotification('Theme updated! 🎨', 'success');
-    } catch (error) {
-        console.error('Error updating theme:', error);
-        showNotification('Error updating theme', 'error');
-    }
+		// Update active state in theme modal
+		document.querySelectorAll('.theme-card').forEach((card) => {
+			card.classList.toggle('active', card.dataset.theme === themeName);
+		});
+
+		// Save to localStorage for persistence
+		localStorage.setItem('selectedTheme', themeName);
+
+		showNotification('Theme updated! 🎨', 'success');
+	} catch (error) {
+		console.error('Error updating theme:', error);
+		showNotification('Error updating theme', 'error');
+	}
 }
 
 // Load saved theme on startup
 function loadSavedTheme() {
-    // Check for saved theme in localStorage
-    const savedTheme = localStorage.getItem('selectedTheme');
-    // Set cosmic as default if no theme is saved
-    const themeToApply = savedTheme || 'cosmic';
-    document.body.setAttribute('data-theme', themeToApply);
-    
-    // Update theme in user settings if logged in
-    const currentUser = auth.currentUser;
-    if (currentUser) {
-        getDoc(doc(db, 'users', currentUser.uid)).then(userDoc => {
-            if (userDoc.exists() && !userDoc.data().theme) {
-                updateDoc(doc(db, 'users', currentUser.uid), {
-                    theme: themeToApply
-                });
-            }
-        }).catch(error => {
-            console.error('Error checking user theme:', error);
-        });
-    }
+	// Check for saved theme in localStorage
+	const savedTheme = localStorage.getItem('selectedTheme');
+	// Set cosmic as default if no theme is saved
+	const themeToApply = savedTheme || 'cosmic';
+	document.body.setAttribute('data-theme', themeToApply);
+
+	// Update theme in user settings if logged in
+	const currentUser = auth.currentUser;
+	if (currentUser) {
+		getDoc(doc(db, 'users', currentUser.uid))
+			.then((userDoc) => {
+				if (userDoc.exists() && !userDoc.data().theme) {
+					updateDoc(doc(db, 'users', currentUser.uid), {
+						theme: themeToApply,
+					});
+				}
+			})
+			.catch((error) => {
+				console.error('Error checking user theme:', error);
+			});
+	}
 }
 
 // Invite System
@@ -1191,100 +1405,108 @@ function generateInviteCode() {
 }
 
 function updateUserAvatar() {
-    const currentUser = $currentUser.get();
-    const avatar = document.getElementById('current-user-avatar');
-    if (currentUser.displayName) {
-        avatar.textContent = currentUser.displayName.charAt(0).toUpperCase();
-    } else if (currentUser.email) {
-        avatar.textContent = currentUser.email.charAt(0).toUpperCase();
-    }
+	const currentUser = $currentUser.get();
+	const avatar = document.getElementById('current-user-avatar');
+	if (currentUser.displayName) {
+		avatar.textContent = currentUser.displayName.charAt(0).toUpperCase();
+	} else if (currentUser.email) {
+		avatar.textContent = currentUser.email.charAt(0).toUpperCase();
+	}
 
-    // Make avatar clickable to open settings
-    avatar.style.cursor = 'pointer';
-    avatar.onclick = () => openSettings();
+	// Make avatar clickable to open settings
+	avatar.style.cursor = 'pointer';
+	avatar.onclick = () => openSettings();
 }
 
 async function openSettings() {
-    const currentUser = $currentUser.get();
-    if (!currentUser) return;
+	const currentUser = $currentUser.get();
+	if (!currentUser) return;
 
-    try {
-        // Fetch user data
-        const userDoc = await getDoc(doc(db, 'users', currentUser.uid));
-        const userData = userDoc.data();
+	try {
+		// Fetch user data
+		const userDoc = await getDoc(doc(db, 'users', currentUser.uid));
+		const userData = userDoc.data();
 
-        if (userData) {
-            document.getElementById('settings-name').value = userData.displayName || currentUser.displayName || '';
-            document.getElementById('settings-birthday').value = userData.birthday || '';
-            document.getElementById('settings-bio').value = userData.bio || '';
-        }
+		if (userData) {
+			document.getElementById('settings-name').value =
+				userData.displayName || currentUser.displayName || '';
+			document.getElementById('settings-birthday').value =
+				userData.birthday || '';
+			document.getElementById('settings-bio').value = userData.bio || '';
+		}
 
-        openModal('settingsModal');
-    } catch (error) {
-        console.error('Error loading settings:', error);
-        showNotification('Error loading settings', 'error');
-    }
+		openModal('settingsModal');
+	} catch (error) {
+		console.error('Error loading settings:', error);
+		showNotification('Error loading settings', 'error');
+	}
 }
 
 // Theme switching
-document.querySelectorAll('.theme-card').forEach(card => {
-    card.addEventListener('click', async () => {
-        const theme = card.dataset.theme;
-        const currentUser = $currentUser.get();
-        
-        try {
-            // Update theme in database
-            await updateDoc(doc(db, 'users', currentUser.uid), {
-                theme: theme
-            });
+document.querySelectorAll('.theme-card').forEach((card) => {
+	card.addEventListener('click', async () => {
+		const theme = card.dataset.theme;
+		const currentUser = $currentUser.get();
 
-            // Update UI
-            document.body.setAttribute('data-theme', theme);
-            document.querySelectorAll('.theme-card').forEach(c => c.classList.remove('active'));
-            card.classList.add('active');
-            
-            showNotification('Theme updated! 🎨', 'success');
-        } catch (error) {
-            console.error('Error updating theme:', error);
-            showNotification('Error updating theme', 'error');
-        }
-    });
+		try {
+			// Update theme in database
+			await updateDoc(doc(db, 'users', currentUser.uid), {
+				theme: theme,
+			});
+
+			// Update UI
+			document.body.setAttribute('data-theme', theme);
+			document
+				.querySelectorAll('.theme-card')
+				.forEach((c) => c.classList.remove('active'));
+			card.classList.add('active');
+
+			showNotification('Theme updated! 🎨', 'success');
+		} catch (error) {
+			console.error('Error updating theme:', error);
+			showNotification('Error updating theme', 'error');
+		}
+	});
 });
 
 function showMembersModal() {
-    openModal('membersModal');
-    renderMembersList();
+	openModal('membersModal');
+	renderMembersList();
 }
 
 async function renderMembersList() {
-    const membersList = document.getElementById('membersList');
-    membersList.innerHTML = '';
+	const membersList = document.getElementById('membersList');
+	membersList.innerHTML = '';
 
-    try {
-        // Get current workspace data
-        const workspaceDoc = await getDoc(doc(db, 'workspaces', currentWorkspace));
-        const workspaceData = workspaceDoc.data();
-        
-        // Get member details
-        const memberPromises = workspaceData.members.map(async memberId => {
-            const memberDoc = await getDoc(doc(db, 'users', memberId));
-            return {
-                id: memberId,
-                ...memberDoc.data()
-            };
-        });
+	try {
+		// Get current workspace data
+		const workspaceDoc = await getDoc(doc(db, 'workspaces', currentWorkspace));
+		const workspaceData = workspaceDoc.data();
 
-        const members = await Promise.all(memberPromises);
-        const isOwner = workspaceData.createdBy === auth.currentUser.uid;
+		// Get member details
+		const memberPromises = workspaceData.members.map(async (memberId) => {
+			const memberDoc = await getDoc(doc(db, 'users', memberId));
+			return {
+				id: memberId,
+				...memberDoc.data(),
+			};
+		});
 
-        members.forEach(member => {
-            const initials = member.displayName 
-                ? member.displayName.split(' ').map(n => n[0]).join('').toUpperCase()
-                : member.email[0].toUpperCase();
+		const members = await Promise.all(memberPromises);
+		const isOwner = workspaceData.createdBy === auth.currentUser.uid;
 
-            const memberItem = document.createElement('div');
-            memberItem.className = 'member-item';
-            memberItem.innerHTML = `
+		members.forEach((member) => {
+			const initials = member.displayName
+				? member.displayName
+						.split(' ')
+						.map((n) => n[0])
+						.join('')
+						.toUpperCase()
+				: member.email[0].toUpperCase();
+
+			const memberItem = document.createElement('div');
+			memberItem.className = 'member-item';
+			memberItem.innerHTML = `
                 <div class="member-info">
                     <div class="member-avatar">${initials}</div>
                     <div class="member-details">
@@ -1292,81 +1514,89 @@ async function renderMembersList() {
                         <p>${member.email}</p>
                     </div>
                 </div>
-                ${isOwner && member.id !== auth.currentUser.uid ? 
-                    `<button class="remove-member-btn" onclick="removeMember('${member.id}')">
+                ${
+									isOwner && member.id !== auth.currentUser.uid
+										? `<button class="remove-member-btn" onclick="removeMember('${member.id}')">
                         Remove
-                    </button>` : ''}
+                    </button>`
+										: ''
+								}
             `;
 
-            membersList.appendChild(memberItem);
-        });
-    } catch (error) {
-        console.error('Error rendering members:', error);
-        showNotification('Error loading members', 'error');
-    }
+			membersList.appendChild(memberItem);
+		});
+	} catch (error) {
+		console.error('Error rendering members:', error);
+		showNotification('Error loading members', 'error');
+	}
 }
 
 async function removeMember(memberId) {
-    try {
-        const workspaceDoc = await getDoc(doc(db, 'workspaces', currentWorkspace));
-        
-        if (!workspaceDoc.exists()) {
-            throw new Error('Workspace not found');
-        }
+	try {
+		const workspaceDoc = await getDoc(doc(db, 'workspaces', currentWorkspace));
 
-        if (workspaceDoc.data().createdBy !== auth.currentUser.uid) {
-            throw new Error('Only workspace owner can remove members');
-        }
+		if (!workspaceDoc.exists()) {
+			throw new Error('Workspace not found');
+		}
 
-        // Remove member from workspace
-        await updateDoc(doc(db, 'workspaces', currentWorkspace), {
-            members: workspaceDoc.data().members.filter(id => id !== memberId)
-        });
+		if (workspaceDoc.data().createdBy !== auth.currentUser.uid) {
+			throw new Error('Only workspace owner can remove members');
+		}
 
-        // Clear workspace ID from removed user's document
-        await updateDoc(doc(db, 'users', memberId), {
-            workspaceId: null
-        });
+		// Remove member from workspace
+		await updateDoc(doc(db, 'workspaces', currentWorkspace), {
+			members: workspaceDoc.data().members.filter((id) => id !== memberId),
+		});
 
-        showNotification('Member removed successfully', 'success');
-        renderMembersList(); // Refresh the list
-    } catch (error) {
-        console.error('Error removing member:', error);
-        showNotification('Error removing member', 'error');
-    }
+		// Clear workspace ID from removed user's document
+		await updateDoc(doc(db, 'users', memberId), {
+			workspaceId: null,
+		});
+
+		showNotification('Member removed successfully', 'success');
+		renderMembersList(); // Refresh the list
+	} catch (error) {
+		console.error('Error removing member:', error);
+		showNotification('Error removing member', 'error');
+	}
 }
 
 // Profile settings form
-document.getElementById('profile-settings-form').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const currentUser = $currentUser.get();
-    const button = e.target.querySelector('button');
-    
-    try {
-        showButtonLoading(button, true);
-        
-        const profileData = {
-            displayName: document.getElementById('settings-name').value,
-            birthday: document.getElementById('settings-birthday').value,
-            bio: document.getElementById('settings-bio').value,
-            updatedAt: serverTimestamp()
-        };
+document
+	.getElementById('profile-settings-form')
+	.addEventListener('submit', async (e) => {
+		e.preventDefault();
+		const currentUser = $currentUser.get();
+		const button = e.target.querySelector('button');
 
-        await updateProfile(currentUser, { displayName: profileData.displayName });
-        await updateDoc(doc(db, 'users', currentUser.uid), profileData);
+		try {
+			showButtonLoading(button, true);
 
-        // Update displayed name and avatar
-        document.getElementById('user-name').textContent = profileData.displayName || currentUser.displayName || '';
-        closeModal('settingsModal');
-        showNotification('Profile updated successfully! 👤', 'success');
-        updateUserAvatar();
-    } catch (error) {
-        console.error('Error updating profile:', error);
-        showNotification('Error updating profile', 'error');
-    } finally {
-        showButtonLoading(button, false);
-    }
-});
+			const profileData = {
+				displayName: document.getElementById('settings-name').value,
+				birthday: document.getElementById('settings-birthday').value,
+				bio: document.getElementById('settings-bio').value,
+				updatedAt: serverTimestamp(),
+			};
+
+			await updateProfile(currentUser, {
+				displayName: profileData.displayName,
+			});
+			await updateDoc(doc(db, 'users', currentUser.uid), profileData);
+
+			// Update displayed name and avatar
+			document.getElementById('user-name').textContent =
+				profileData.displayName || currentUser.displayName || '';
+			closeModal('settingsModal');
+			showNotification('Profile updated successfully! 👤', 'success');
+			updateUserAvatar();
+		} catch (error) {
+			console.error('Error updating profile:', error);
+			showNotification('Error updating profile', 'error');
+		} finally {
+			showButtonLoading(button, false);
+		}
+	});
 
 function getErrorMessage(error) {
 	switch (error.code) {
@@ -1427,6 +1657,35 @@ function showNotification(message, type = 'info') {
 	}, 3000);
 }
 
+// Custom in-app notification system
+function showCustomNotification(message, type = 'success', duration = 2000) {
+	// Remove any existing custom notifications
+	const existing = document.querySelector('.custom-notification');
+	if (existing) {
+		existing.remove();
+	}
+
+	const notification = document.createElement('div');
+	notification.className = `custom-notification ${type}`;
+	notification.textContent = message;
+	document.body.appendChild(notification);
+
+	// Show notification with animation
+	setTimeout(() => {
+		notification.classList.add('show');
+	}, 10);
+
+	// Hide notification after duration
+	setTimeout(() => {
+		notification.classList.add('hide');
+		setTimeout(() => {
+			if (document.body.contains(notification)) {
+				document.body.removeChild(notification);
+			}
+		}, 400);
+	}, duration);
+}
+
 // Click outside modal to close
 document.addEventListener('click', (e) => {
 	if (
@@ -1456,6 +1715,20 @@ document.addEventListener('keydown', (e) => {
 	if (e.key === '2' && e.ctrlKey) {
 		e.preventDefault();
 		switchTab('todo');
+	}
+});
+
+// Fallback event listener for delete buttons
+document.addEventListener('click', (e) => {
+	if (e.target.classList.contains('delete-todo-btn')) {
+		e.stopPropagation();
+		const todoId =
+			e.target.dataset.todoId ||
+			e.target.closest('[data-todo-id]')?.dataset.todoId;
+		if (todoId) {
+			console.log('Fallback delete handler triggered for todo:', todoId);
+			deleteTodo(todoId);
+		}
 	}
 });
 
@@ -1491,7 +1764,7 @@ function handleSwipe() {
 }
 
 // Connection status monitoring
-function updateConnectionStatus(status) {
+function _updateConnectionStatus(status) {
 	const statusEl = document.getElementById('connection-status');
 	const statusText = document.getElementById('status-text');
 
@@ -1534,6 +1807,46 @@ function setupAutoSave() {
 			}, 1000);
 		});
 	});
+}
+
+// Date validation function
+function setupDateValidation() {
+    const startDateInput = document.getElementById('eventStartDate');
+    const endDateInput = document.getElementById('eventEndDate');
+
+    if (!startDateInput || !endDateInput) return;
+
+    function validateDates() {
+        const startDate = new Date(startDateInput.value);
+        const endDate = new Date(endDateInput.value);
+
+        // Remove existing error messages
+        const existingError = document.querySelector('.date-error');
+        if (existingError) {
+            existingError.remove();
+        }
+
+        // Remove error styling
+        startDateInput.classList.remove('input-error');
+        endDateInput.classList.remove('input-error');
+
+        // Validate if both dates are provided
+        if (startDateInput.value && endDateInput.value) {
+            if (startDate > endDate) {
+                startDateInput.classList.add('input-error');
+                endDateInput.classList.add('input-error');
+
+                // Add error message
+                const errorDiv = document.createElement('div');
+                errorDiv.className = 'date-error form-error';
+                errorDiv.textContent = 'Start date cannot be after end date';
+                endDateInput.parentNode.appendChild(errorDiv);
+            }
+        }
+    }
+
+    startDateInput.addEventListener('change', validateDates);
+    endDateInput.addEventListener('change', validateDates);
 }
 
 // Initialize auto-save when app loads
