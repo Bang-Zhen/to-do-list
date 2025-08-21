@@ -479,12 +479,16 @@ function updatePartnerInfo(members) {
 
 // Real-time Event Listener
 function setupEventListener() {
-	console.log('Setting up event listener for workspace:', currentWorkspace);
+	console.log('🔧 Setting up event listener for workspace:', currentWorkspace);
+	console.log('🔧 Current user:', $currentUser.get()?.uid);
+	console.log('🔧 Auth user:', auth.currentUser?.uid);
 
 	if (!currentWorkspace) {
-		console.error('No current workspace set for event listener');
+		console.error('❌ No current workspace set for event listener');
 		return;
 	}
+
+	console.log('🔧 Workspace exists, proceeding with listener setup');
 
 	const eventsQuery = query(
 		collection(db, 'events'),
@@ -492,13 +496,22 @@ function setupEventListener() {
 		orderBy('startDate', 'asc'),
 	);
 
-	console.log('Event query created:', eventsQuery);
+	console.log('🔧 Event query created:', eventsQuery);
 
 	unsubscribeEvents = onSnapshot(eventsQuery, (snapshot) => {
-		console.log('Event snapshot received. Docs count:', snapshot.docs.length);
+		console.log('📡 EVENT LISTENER TRIGGERED');
+		console.log('📊 Snapshot docs count:', snapshot.docs.length);
+		console.log('📊 Snapshot metadata:', snapshot.metadata);
+		console.log('📊 Query details:', eventsQuery);
+
 		const newEvents = snapshot.docs.map((doc) => {
 			const data = doc.data();
-			console.log('Processing event doc:', doc.id, data);
+			console.log('📄 Processing event doc:', doc.id, {
+				...data,
+				startDate: data.startDate,
+				endDate: data.endDate,
+				workspaceId: data.workspaceId
+			});
 			return {
 				id: doc.id,
 				...data,
@@ -507,22 +520,25 @@ function setupEventListener() {
 			};
 		});
 
-		console.log('Event listener triggered. Events count:', newEvents.length);
-		console.log('Events data:', newEvents);
+		console.log('✅ Event listener processed. Events count:', newEvents.length);
+		console.log('✅ Global events array before assignment:', events.length);
+		console.log('✅ Events data:', newEvents);
 
 		events = newEvents;
+		console.log('✅ Global events array after assignment:', events.length);
 
 		const calendarView = document.getElementById('calendar-view');
 		const isCalendarVisible =
 			calendarView && !calendarView.classList.contains('hidden');
-		console.log('Calendar view visible:', isCalendarVisible);
+		console.log('📅 Calendar view visible:', isCalendarVisible);
+		console.log('📅 Calendar element found:', !!calendarView);
 
 		// Always regenerate calendar when events change to ensure new events appear
 		// regardless of which tab is currently active
-		console.log('Regenerating calendar with new events');
-		console.log('Total events to render:', events.length);
+		console.log('🔄 Regenerating calendar with new events');
+		console.log('🔄 Total events to render:', events.length);
 		events.forEach((event, index) => {
-			console.log(`Event ${index + 1}:`, {
+			console.log(`🔄 Event ${index + 1}:`, {
 				id: event.id,
 				title: event.title,
 				startDate: event.startDate,
@@ -530,9 +546,14 @@ function setupEventListener() {
 				workspaceId: event.workspaceId
 			});
 		});
+
+		console.log('🔄 Calling generateCalendar...');
 		generateCalendar(currentDate);
+		console.log('🔄 generateCalendar completed');
 	}, (error) => {
-		console.error('Error in event listener:', error);
+		console.error('❌ Error in event listener:', error);
+		console.error('❌ Error code:', error.code);
+		console.error('❌ Error message:', error.message);
 	});
 }
 
@@ -615,16 +636,104 @@ function generateCalendar(date) {
 		}
 
 		dayElement.innerHTML = `
-            <div class="day-number">${day}</div>
-            <div class="day-events"></div>
-        `;
+			<div class="day-number">${day}</div>
+			<div class="day-events">
+				<div class="multi-day-events"></div>
+				<div class="single-day-events"></div>
+			</div>
+		`;
+
+		// Add styles for better event organization
+		const style = document.createElement('style');
+		style.textContent = `
+			.calendar-day {
+				min-height: 120px;
+				padding: 8px;
+				background: rgba(255, 255, 255, 0.03);
+				border-radius: 12px;
+				transition: all 0.2s ease;
+			}
+			.calendar-day:hover {
+				background: rgba(255, 255, 255, 0.06);
+				transform: translateY(-1px);
+			}
+			.day-number {
+				font-size: 0.9rem;
+				margin-bottom: 8px;
+				color: var(--text-secondary);
+			}
+			.day-events {
+				display: flex;
+				flex-direction: column;
+				gap: 4px;
+			}
+			.multi-day-events {
+				margin-bottom: 4px;
+			}
+			.single-day-events {
+				display: flex;
+				flex-direction: column;
+				gap: 2px;
+			}
+			.event-pill {
+				font-size: 0.8rem;
+				padding: 2px 6px;
+				border-radius: 4px;
+				white-space: nowrap;
+				overflow: hidden;
+				text-overflow: ellipsis;
+				cursor: pointer;
+				transition: all 0.2s ease;
+				background: rgba(255, 255, 255, 0.1);
+			}
+			.event-pill:hover {
+				transform: translateX(2px);
+				background: rgba(255, 255, 255, 0.15);
+			}
+			.event-pill.shared {
+				background: var(--primary-gradient);
+				color: white;
+			}
+			.event-pill:nth-child(n+5) {
+				display: none;
+			}
+			.has-more-events::after {
+				content: "•••";
+				display: block;
+				text-align: center;
+				color: var(--text-secondary);
+				font-size: 0.8rem;
+				margin-top: 2px;
+			}
+		`;
+		document.head.appendChild(style);
+
+		// Check if this day has events and add indicator
+		const dayEvents = getEventsForDate(currentDateStr);
+		if (dayEvents.length > 0) {
+			const multiDayEvents = dayEvents.filter(event => event.endDate && event.startDate !== event.endDate);
+			const singleDayEvents = dayEvents.filter(event => !event.endDate || event.startDate === event.endDate);
+
+			dayElement.classList.add('has-events');
+			dayElement.classList.add('has-events');
+		} else {
+			dayElement.classList.add('no-events');
+		}
 
 		dayElement.addEventListener('click', (e) => {
 			if (
 				!e.target.classList.contains('event-pill') &&
 				!e.target.classList.contains('event-span')
 			) {
-				openEventModal(currentDateStr);
+				// Check if there are events on this date
+				const dayEvents = getEventsForDate(currentDateStr);
+				if (dayEvents.length > 0) {
+					// If there are events, show the day events modal
+					openDayEventsModal(currentDateStr);
+				} else {
+					// If no events, open the event creation modal directly
+					openEventModal(currentDateStr);
+				}
 			}
 		});
 
@@ -637,52 +746,120 @@ function generateCalendar(date) {
 		const dayElement = document.createElement('div');
 		dayElement.className = 'calendar-day other-month';
 		dayElement.innerHTML = `
-            <div class="day-number">${day}</div>
-            <div class="day-events"></div>
-        `;
+			<div class="day-number">${day}</div>
+			<div class="day-events"></div>
+		`;
+
+		// Calculate the date for next month
+		const nextMonthDate = new Date(year, month + 1, day);
+		const nextMonthDateStr = `${nextMonthDate.getFullYear()}-${String(nextMonthDate.getMonth() + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+
+		// Check if this day has events and add indicator
+		const dayEvents = getEventsForDate(nextMonthDateStr);
+		if (dayEvents.length > 0) {
+			dayElement.classList.add('has-events');
+		}
 		calendarDays.push(dayElement);
 	}
 
 	// Add all days to the grid
 	calendarDays.forEach((day) => grid.appendChild(day));
 
-	// Render single-day events
-	console.log('Rendering events on calendar. Total events:', events.length);
-	events.forEach((event) => {
-		console.log('Processing event:', event);
+	// Clear existing events first
+	console.log('🧹 Clearing existing events from calendar');
+	const allDayElements = grid.querySelectorAll('.calendar-day');
+	allDayElements.forEach(dayElement => {
+		const eventsContainer = dayElement.querySelector('.day-events');
+		if (eventsContainer) {
+			eventsContainer.innerHTML = '';
+		}
+	});
+
+	// Sort events by duration (multi-day events first)
+	const sortedEvents = [...events].sort((a, b) => {
+		const aIsSingleDay = !a.endDate || a.startDate === a.endDate;
+		const bIsSingleDay = !b.endDate || b.startDate === b.endDate;
+		if (aIsSingleDay && !bIsSingleDay) return 1;
+		if (!aIsSingleDay && bIsSingleDay) return -1;
+		return 0;
+	});
+
+	console.log('🎨 RENDERING EVENTS ON CALENDAR');
+	console.log('📊 Total events to render:', sortedEvents.length);
+	console.log('📊 Current date being rendered:', date.toISOString().split('T')[0]);
+	console.log('📊 Current month/year:', date.getFullYear(), date.getMonth() + 1);
+
+	// Render multi-day events first
+	sortedEvents.forEach((event, index) => {
+		console.log(`📅 Processing event ${index + 1}:`, {
+			id: event.id,
+			title: event.title,
+			startDate: event.startDate,
+			endDate: event.endDate,
+			workspaceId: event.workspaceId,
+			shared: event.shared
+		});
+
 		if (!event.endDate || event.startDate === event.endDate) {
-			console.log('Looking for day element with date:', event.startDate);
+			console.log(`🔍 Looking for day element with date: ${event.startDate}`);
 			const dayElement = grid.querySelector(`[data-date="${event.startDate}"]`);
-			console.log('Day element found:', dayElement ? 'YES' : 'NO');
+			console.log(`✅ Day element found: ${dayElement ? 'YES' : 'NO'}`);
+
 			if (dayElement) {
 				const eventsContainer = dayElement.querySelector('.day-events');
-				console.log('Events container found:', eventsContainer ? 'YES' : 'NO');
+				console.log(`📦 Events container found: ${eventsContainer ? 'YES' : 'NO'}`);
+				console.log(`📦 Events container children before:`, eventsContainer?.children.length || 0);
+
 				if (eventsContainer) {
+					// Check if event already exists to avoid duplicates
+					const existingEvent = eventsContainer.querySelector(`[data-event-id="${event.id}"]`);
+					if (existingEvent) {
+						console.log(`⚠️ Event already exists on calendar, skipping: ${event.title}`);
+						return;
+					}
+	
 					const eventElement = document.createElement('div');
 					eventElement.className = `event-pill ${event.shared ? 'shared' : ''} ${event.attachmentUrl ? 'has-attachment' : ''}`;
+					eventElement.setAttribute('data-event-id', event.id);
+					eventElement.setAttribute('style', 'position: relative; z-index: 2'); // Ensure single-day events are above multi-day ones
 					eventElement.textContent = event.title || 'Untitled Event';
-					console.log('Created event element with title:', event.title);
-
+					console.log(`🏷️ Created event element with title: "${event.title}"`);
+	
 					// Add click handler
 					eventElement.addEventListener('click', (e) => {
 						e.stopPropagation();
+						console.log(`🎯 Event clicked: ${event.id}`);
 						openEventDetails(event.id);
 					});
-
+	
 					eventsContainer.appendChild(eventElement);
-					console.log('Event element appended to calendar successfully');
+					console.log(`✅ Event element appended to calendar successfully for: "${event.title}"`);
+					console.log(`📍 Event container details:`, {
+						container: eventsContainer,
+						parentDay: dayElement,
+						eventElement: eventElement,
+						containerChildren: eventsContainer.children.length,
+						eventElementInDOM: document.body.contains(eventElement)
+					});
+
+					// Add has-events class to day element
+					dayElement.classList.add('has-events');
+					dayElement.classList.remove('no-events');
+					console.log(`🏷️ Added has-events class to day element for: "${event.title}"`);
 				} else {
-					console.error('Events container not found in day element');
+					console.error(`❌ Events container not found in day element for date: ${event.startDate}`);
 				}
 			} else {
-				console.log('No day element found for date:', event.startDate);
+				console.log(`❌ No day element found for date: ${event.startDate}`);
 				// Let's see what dates are available in the calendar
 				const allDayElements = grid.querySelectorAll('[data-date]');
-				console.log('Available dates in calendar:');
+				console.log(`📋 Available dates in calendar (${allDayElements.length} days):`);
 				allDayElements.forEach((el, index) => {
 					console.log(`  ${index + 1}: ${el.dataset.date}`);
 				});
 			}
+		} else {
+			console.log(`🔗 Skipping multi-day event: ${event.title} (${event.startDate} to ${event.endDate})`);
 		}
 	});
 
@@ -690,13 +867,13 @@ function generateCalendar(date) {
 	events
 		.filter((event) => event.endDate && event.startDate !== event.endDate)
 		.forEach((event) => {
+			console.log(`🔗 Processing multi-day event: ${event.title} (${event.startDate} to ${event.endDate})`);
 			const startDate = new Date(event.startDate);
 			const endDate = new Date(event.endDate);
 
 			const currentDate = new Date(startDate);
-			let weekStart = null;
-			let weekEnd = null;
 			let currentWeekSpan = null;
+			let lastWeekIndex = -1;
 
 			while (currentDate <= endDate) {
 				const dateStr = currentDate.toISOString().split('T')[0];
@@ -705,31 +882,89 @@ function generateCalendar(date) {
 				if (dayElement) {
 					const dayIndex = Array.from(grid.children).indexOf(dayElement) - 7; // Subtract header row
 					const weekIndex = Math.floor(dayIndex / 7);
+					const dayInWeek = dayIndex % 7;
 
-					if (weekStart === null) {
-						weekStart = dayIndex;
-						weekEnd = weekStart + (6 - (weekStart % 7));
+					// If we're in a new week or this is the first day
+					if (weekIndex !== lastWeekIndex) {
+						if (currentWeekSpan) {
+							const weekEnd = lastWeekIndex * 7 + 6;
+							const spanEnd = Math.min(weekEnd, currentWeekSpan._lastDayIndex);
+							const spanStart = (lastWeekIndex * 7) + (currentWeekSpan._startDay % 7);
+							const width = ((spanEnd - spanStart + 1) * 14.28);
+							currentWeekSpan.style.width = `${width}%`;
+						}
 
+						// Start new span for this week
 						currentWeekSpan = document.createElement('div');
-						currentWeekSpan.className = `event-span ${event.shared ? 'shared' : ''} start`;
-						currentWeekSpan.style.top = `${30 + weekIndex * 80}px`; // Adjust based on your calendar cell height
+						currentWeekSpan.className = `event-span ${event.shared ? 'shared' : ''} ${dateStr === event.startDate ? 'start' : ''}`;
+						
+						// Get the grid's dimensions
+						const dayRect = dayElement.getBoundingClientRect();
+						const gridRect = grid.getBoundingClientRect();
+						const cellHeight = dayRect.height;
+						
+						// Create positioning styles
+						const styles = {
+							position: 'absolute',
+							left: `${dayInWeek * 14.28}%`,
+							width: '14.28%', // Initial width of one day
+							top: `${(weekIndex * cellHeight) + 8}px`, // Position at top of cell
+							height: '20px',
+							background: event.shared ? 'var(--primary-gradient)' : 'var(--secondary-gradient)',
+							padding: '2px 6px',
+							fontSize: '0.8rem',
+							borderRadius: '4px',
+							border: '1px solid rgba(255,255,255,0.2)',
+							boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+							cursor: 'pointer',
+							zIndex: '2', // Higher z-index to be above day cells
+							color: '#FFFFFF',
+							whiteSpace: 'nowrap',
+							overflow: 'hidden',
+							textOverflow: 'ellipsis',
+							transition: 'all 0.2s ease'
+						};
+
+						// Apply styles
+						Object.assign(currentWeekSpan.style, styles);
+						
 						currentWeekSpan.textContent = event.title;
 						currentWeekSpan.onclick = () => openEventDetails(event.id);
+						currentWeekSpan._startDay = dayIndex;
+						currentWeekSpan._lastDayIndex = dayIndex;
+
+						// Add hover effect
+						currentWeekSpan.onmouseenter = function() {
+							this.style.transform = 'translateY(-2px)';
+							this.style.boxShadow = '0 4px 8px rgba(0,0,0,0.2)';
+						};
+						currentWeekSpan.onmouseleave = function() {
+							this.style.transform = 'translateY(0)';
+							this.style.boxShadow = '0 2px 4px rgba(0,0,0,0.1)';
+						};
+						
+						// Append to the grid
 						grid.appendChild(currentWeekSpan);
-					}
 
-					// If we've reached the end of the week or the end date
-					if (dayIndex === weekEnd || dateStr === event.endDate) {
-						currentWeekSpan.style.left = `${(weekStart % 7) * 14.28}%`;
-						currentWeekSpan.style.width = `${(dayIndex - weekStart + 1) * 14.28}%`;
-						if (dateStr === event.endDate) currentWeekSpan.classList.add('end');
-
-						weekStart = null;
-						currentWeekSpan = null;
+						lastWeekIndex = weekIndex;
+					} else if (currentWeekSpan) {
+						// Update the last day index as we move through the week
+						currentWeekSpan._lastDayIndex = dayIndex;
 					}
 				}
 
+				// Move to next day
 				currentDate.setDate(currentDate.getDate() + 1);
+
+				// If this was the last day, finish the current span
+				if (currentWeekSpan && (dateStr === event.endDate || currentDate > endDate)) {
+					const weekEnd = lastWeekIndex * 7 + 6;
+					const spanEnd = Math.min(weekEnd, currentWeekSpan._lastDayIndex);
+					const spanStart = (lastWeekIndex * 7) + (currentWeekSpan._startDay % 7);
+					const width = ((spanEnd - spanStart + 1) * 14.28);
+					currentWeekSpan.style.width = `${width}%`;
+					if (dateStr === event.endDate) currentWeekSpan.classList.add('end');
+				}
 			}
 		});
 }
@@ -737,6 +972,22 @@ function generateCalendar(date) {
 function changeMonth(direction) {
 	currentDate.setMonth(currentDate.getMonth() + direction);
 	generateCalendar(currentDate);
+}
+
+// Function to clear all events from calendar
+function clearAllCalendarEvents() {
+	console.log('🧹 Clearing all events from calendar');
+	const grid = document.getElementById('calendarGrid');
+	if (grid) {
+		const allDayElements = grid.querySelectorAll('.calendar-day');
+		allDayElements.forEach(dayElement => {
+			const eventsContainer = dayElement.querySelector('.day-events');
+			if (eventsContainer) {
+				eventsContainer.innerHTML = '';
+			}
+		});
+		console.log('✅ All calendar events cleared');
+	}
 }
 
 // Tab Switching
@@ -775,10 +1026,20 @@ function openModal(modalId) {
 }
 
 function closeModal(modalId) {
-	document.getElementById(modalId).classList.remove('active');
+	const modal = document.getElementById(modalId);
+	if (!modal) return;
+	
+	modal.classList.remove('active');
+
+	// For dynamically created modals, remove them after animation
+	if (modalId === 'daily-events-modal') {
+		setTimeout(() => {
+			modal.remove();
+		}, 300);
+		return;
+	}
 
 	// Reset forms
-	const modal = document.getElementById(modalId);
 	const forms = modal.querySelectorAll('form');
 	forms.forEach((form) => form.reset());
 
@@ -789,73 +1050,754 @@ function closeModal(modalId) {
 	});
 }
 
-function openEventModal(selectedDate = null) {
-	console.log('Opening event modal with date:', selectedDate);
+function openEventModal(selectedDate = null, isNewEvent = false, isShared = true) {
+    if (isNewEvent) {
+        // Clear and set up form fields
+        const eventStartDate = document.getElementById('eventStartDate');
+        const eventEndDate = document.getElementById('eventEndDate');
+        const eventTitle = document.getElementById('eventTitle');
+        const eventTime = document.getElementById('eventTime');
+        const eventLocation = document.getElementById('eventLocation');
+        const eventNotes = document.getElementById('eventNotes');
+        const eventShared = document.getElementById('eventShared');
+        const modalTitle = document.getElementById('event-modal-title');
 
-	// Check if elements exist
-	const eventStartDate = document.getElementById('eventStartDate');
-	const eventEndDate = document.getElementById('eventEndDate');
-	const eventTitle = document.getElementById('eventTitle');
-	const eventTime = document.getElementById('eventTime');
-	const eventLocation = document.getElementById('eventLocation');
-	const eventNotes = document.getElementById('eventNotes');
-	const eventShared = document.getElementById('eventShared');
+        // Clear form fields
+        if (eventTitle) eventTitle.value = '';
+        if (eventTime) eventTime.value = '';
+        if (eventLocation) eventLocation.value = '';
+        if (eventNotes) eventNotes.value = '';
+        if (eventShared) eventShared.checked = isShared;
 
-	console.log('Form elements found:', {
-		eventStartDate: !!eventStartDate,
-		eventEndDate: !!eventEndDate,
-		eventTitle: !!eventTitle,
-		eventTime: !!eventTime,
-		eventLocation: !!eventLocation,
-		eventNotes: !!eventNotes,
-		eventShared: !!eventShared
+        // Format and set dates if provided
+        if (selectedDate) {
+            let formattedDate = selectedDate;
+            if (selectedDate.includes('/')) {
+                const parts = selectedDate.split('/');
+                if (parts.length === 3) {
+                    formattedDate = `${parts[2]}-${parts[0].padStart(2, '0')}-${parts[1].padStart(2, '0')}`;
+                }
+            }
+
+            if (eventStartDate) eventStartDate.value = formattedDate;
+            if (eventEndDate) eventEndDate.value = formattedDate;
+        }
+
+        // Set modal settings
+        const isMultiDay = document.getElementById('isMultiDay');
+        if (isMultiDay) isMultiDay.checked = false;
+        if (modalTitle) modalTitle.textContent = '✨ Create New Memory ✨';
+        
+        // Open the event form modal
+        openModal('eventModal');
+        closeModal('daily-events-modal');
+        return;
+    }
+
+    // Check if there are events for the selected date
+    const dateEvents = events.filter(event => {
+        const startDate = event.startDate;
+        const endDate = event.endDate || event.startDate;
+        return selectedDate >= startDate && selectedDate <= endDate;
+    });
+
+    // Create events preview modal
+    const modal = document.createElement('div');
+    modal.className = 'modal';
+    modal.id = 'daily-events-modal';
+
+    const formattedDate = selectedDate ? new Date(selectedDate).toLocaleDateString('en-US', {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+    }) : '';
+
+    const content = `
+        <div class="modal-content daily-events-content">
+            <div class="modal-header">
+                <h3 class="modal-title">✨ Your Special Day Together ✨</h3>
+                <button class="close-btn" onclick="closeModal('daily-events-modal')">&times;</button>
+            </div>
+            <div class="date-header">
+                <span class="selected-date">${formattedDate}</span>
+            </div>
+            <div class="events-content">
+                ${dateEvents.length > 0 ? `
+                    <div class="events-list">
+                        ${dateEvents.map(event => `
+                            <div class="event-item ${event.shared ? 'shared' : ''}">
+                                <div class="event-item-content">
+                                    <div class="event-item-header">
+                                        <h4>${event.title}</h4>
+                                        ${event.shared ? '<span class="shared-tag">💑 Together</span>' : '<span class="personal-tag">📝 Personal</span>'}
+                                    </div>
+                                    <div class="event-item-details">
+                                        ${event.time ? `<span class="detail-item">⏰ ${event.time}</span>` : ''}
+                                        ${event.location ? `<span class="detail-item">📍 ${event.location}</span>` : ''}
+                                    </div>
+                                    ${event.notes ? `<div class="event-item-notes">${event.notes}</div>` : ''}
+                                    ${event.attachmentUrl ? `
+                                        <div class="event-item-attachment">
+                                            <a href="${event.attachmentUrl}" target="_blank">
+                                                📎 ${event.attachmentName || 'Attachment'}
+                                            </a>
+                                        </div>
+                                    ` : ''}
+                                </div>
+                                <div class="event-item-actions">
+                                    <button class="action-btn" onclick="event.stopPropagation(); openEventDetails('${event.id}')" title="Edit">✏️</button>
+                                    <button class="action-btn delete" onclick="event.stopPropagation(); deleteEvent('${event.id}')" title="Delete">🗑️</button>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                ` : `
+                    <div class="no-events-message">
+                        <div class="empty-state-icon">💝</div>
+                        <p>No plans yet for this special day!</p>
+                        <p class="empty-state-subtext">Add something memorable to share together.</p>
+                    </div>
+                `}
+            </div>
+            <div class="modal-footer">
+                <div class="button-group">
+                    <button class="btn btn-secondary" onclick="openEventModal('${selectedDate}', true, false)">
+                        <span>Add Event</span>
+                        <span>📝</span>
+                    </button>
+                    <button class="btn btn-primary" onclick="openEventModal('${selectedDate}', true, true)">
+                        <span>Create New Memory</span>
+                        <span>💝</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+
+    modal.innerHTML = content;
+    document.body.appendChild(modal);
+
+    // Add styles for the new modal
+    const styleElement = document.createElement('style');
+    styleElement.textContent = `
+        .daily-events-content {
+            max-width: 600px;
+            padding: 30px;
+            background: rgba(255, 255, 255, 0.95);
+            color: #333;
+        }
+        .daily-events-content .modal-title,
+        .daily-events-content .date-header,
+        .daily-events-content .event-item-header h4 {
+            color: #333 !important;
+        }
+        .daily-events-content .detail-item,
+        .daily-events-content .event-item-notes,
+        .daily-events-content .event-item-attachment a,
+        .daily-events-content .personal-tag,
+        .daily-events-content .empty-state-subtext,
+        .daily-events-content .no-events-message {
+            color: #666 !important;
+        }
+        .daily-events-content input[type="text"],
+        .daily-events-content input[type="date"],
+        .daily-events-content input[type="time"],
+        .daily-events-content textarea {
+            font-family: "Space Grotesk", sans-serif;
+            font-size: 1rem;
+            color: #333;
+        }
+        .date-header {
+            text-align: center;
+            margin: 15px 0 25px;
+            color: var(--text-primary);
+            font-family: "Space Grotesk", sans-serif;
+            font-size: 1.2rem;
+            padding-bottom: 15px;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+        }
+        .events-list {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            max-height: 400px;
+            overflow-y: auto;
+            padding-right: 10px;
+            margin: 20px 0;
+        }
+        .event-item {
+            background: white;
+            border-radius: 12px;
+            padding: 16px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+            border: 1px solid rgba(0, 0, 0, 0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 12px;
+        }
+        .event-item-content {
+            flex: 1;
+        }
+        .event-item-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+        .event-item-header h4 {
+            margin: 0;
+            font-size: 1.1rem;
+            color: var(--text-primary);
+            font-weight: 600;
+        }
+        .event-item-details {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin: 8px 0;
+        }
+        .detail-item {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .shared-tag, .personal-tag {
+            font-size: 0.8rem;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-weight: 500;
+        }
+        .shared-tag {
+            background: var(--secondary-gradient);
+            color: white;
+        }
+        .personal-tag {
+            background: rgba(0, 0, 0, 0.05);
+            color: var(--text-secondary);
+        }
+        .event-location, .event-notes {
+            margin-top: 8px;
+            font-size: 0.9rem;
+            color: inherit;
+            opacity: 0.9;
+        }
+        .event-footer {
+            margin-top: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .event-actions {
+            display: flex;
+            gap: 8px;
+        }
+        .event-item-actions {
+            display: flex;
+            gap: 8px;
+        }
+        .action-btn {
+            background: none;
+            border: none;
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1rem;
+            color: var(--text-secondary);
+            transition: all 0.2s ease;
+        }
+        .action-btn:hover {
+            background: rgba(0, 0, 0, 0.05);
+            transform: translateY(-1px);
+        }
+        .action-btn.delete:hover {
+            background: rgba(255, 87, 87, 0.1);
+            color: #ff5757;
+        }
+        .event-item-notes {
+            margin-top: 8px;
+            padding-top: 8px;
+            border-top: 1px solid rgba(0, 0, 0, 0.1);
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            line-height: 1.4;
+        }
+        .event-item-attachment {
+            margin-top: 8px;
+            font-size: 0.9rem;
+        }
+        .event-item-attachment a {
+            color: var(--text-secondary);
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .event-item-attachment a:hover {
+            text-decoration: underline;
+        }
+        .shared-badge {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            color: white;
+        }
+        .no-events-message {
+            text-align: center;
+            padding: 40px 20px;
+            color: var(--text-secondary);
+        }
+        .empty-state-icon {
+            font-size: 3rem;
+            margin-bottom: 15px;
+            animation: pulse 2s infinite;
+        }
+        .empty-state-subtext {
+            font-size: 0.9rem;
+            margin-top: 5px;
+            opacity: 0.8;
+        }
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+        .modal-footer {
+            margin-top: 25px;
+            text-align: center;
+            border-top: 1px solid rgba(0, 0, 0, 0.1);
+            padding-top: 20px;
+        }
+        .modal-footer .button-group {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+        }
+        .modal-footer .btn {
+            padding: 12px 24px;
+            border-radius: 25px;
+            border: none;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-family: "Space Grotesk", sans-serif;
+            font-size: 1rem;
+            min-width: 180px;
+        }
+        .modal-footer .btn-primary {
+            background: var(--secondary-gradient);
+            color: white;
+        }
+        .modal-footer .btn-secondary {
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--text-primary);
+            border: 1px solid rgba(0, 0, 0, 0.1);
+        }
+        .modal-footer .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+        }
+    `;
+    document.head.appendChild(styleElement);
+
+    // Show the modal
+    setTimeout(() => modal.classList.add('active'), 10);
+}
+
+function openNewEventModal(selectedDate) {
+    closeModal('daily-events-modal');
+    
+    // Set up new event form and validate elements exist
+    const eventStartDate = document.getElementById('eventStartDate');
+    const eventEndDate = document.getElementById('eventEndDate');
+    const eventTitle = document.getElementById('eventTitle');
+    const eventTime = document.getElementById('eventTime');
+    const eventLocation = document.getElementById('eventLocation');
+    const eventNotes = document.getElementById('eventNotes');
+    const eventShared = document.getElementById('eventShared');
+    const modalTitle = document.getElementById('event-modal-title');
+
+    // Log form elements for debugging
+    console.log('Form elements found:', {
+        eventStartDate: !!eventStartDate,
+        eventEndDate: !!eventEndDate,
+        eventTitle: !!eventTitle,
+        eventTime: !!eventTime,
+        eventLocation: !!eventLocation,
+        eventNotes: !!eventNotes,
+        eventShared: !!eventShared
+    });
+
+    // Clear and set up form fields
+    if (eventTitle) eventTitle.value = '';
+    if (eventTime) eventTime.value = '';
+    if (eventLocation) eventLocation.value = '';
+    if (eventNotes) eventNotes.value = '';
+    if (eventShared) eventShared.checked = true;
+
+    // Format and set dates if provided
+    if (selectedDate) {
+        console.log('Setting date values to:', selectedDate);
+        // Ensure the date is in YYYY-MM-DD format
+        let formattedDate = selectedDate;
+        if (selectedDate.includes('/')) {
+            const parts = selectedDate.split('/');
+            if (parts.length === 3) {
+                formattedDate = `${parts[2]}-${parts[0].padStart(2, '0')}-${parts[1].padStart(2, '0')}`;
+            }
+        }
+        console.log('Formatted date:', formattedDate);
+
+        if (eventStartDate) eventStartDate.value = formattedDate;
+        if (eventEndDate) eventEndDate.value = formattedDate;
+    }
+
+    // Set modal settings
+    const isMultiDay = document.getElementById('isMultiDay');
+    if (isMultiDay) isMultiDay.checked = false;
+    if (modalTitle) modalTitle.textContent = '✨ Create New Memory ✨';
+    
+    // Open modal and log final state
+    openModal('eventModal');
+    console.log('Final form values:', {
+        startDate: eventStartDate?.value,
+        endDate: eventEndDate?.value,
+        title: eventTitle?.value
+    });
+}
+
+// Day Events Modal Functions
+function openDayEventsModal(selectedDate) {
+    // Create events preview modal
+    const modal = document.createElement('div');
+    modal.className = 'modal';
+    modal.id = 'daily-events-modal';
+
+    const formattedDate = selectedDate ? new Date(selectedDate).toLocaleDateString('en-US', {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+    }) : '';
+
+    const dateEvents = events.filter(event => {
+        const startDate = event.startDate;
+        const endDate = event.endDate || event.startDate;
+        return selectedDate >= startDate && selectedDate <= endDate;
+    });
+
+    const content = `
+        <div class="modal-content daily-events-content" style="color: #333;">
+            <div class="modal-header">
+                <h3 class="modal-title" style="color: #333;">✨ Your Special Day Together ✨</h3>
+                <button class="close-btn" onclick="closeModal('daily-events-modal')">&times;</button>
+            </div>
+            <div class="date-header">
+                <span class="selected-date" style="color: #333;">${formattedDate}</span>
+            </div>
+            <div class="events-content">
+                ${dateEvents.length > 0 ? `
+                    <div class="events-list">
+                        ${dateEvents.map(event => `
+                            <div class="event-item ${event.shared ? 'shared' : ''}">
+                                <div class="event-item-content">
+                                    <div class="event-item-header">
+                                        <h4>${event.title}</h4>
+                                        ${event.shared ? '<span class="shared-tag">💑 Together</span>' : '<span class="personal-tag">📝 Personal</span>'}
+                                    </div>
+                                    <div class="event-item-details">
+                                        ${event.time ? `<span class="detail-item">⏰ ${event.time}</span>` : ''}
+                                        ${event.location ? `<span class="detail-item">📍 ${event.location}</span>` : ''}
+                                    </div>
+                                    ${event.notes ? `<div class="event-item-notes">${event.notes}</div>` : ''}
+                                    ${event.attachmentUrl ? `
+                                        <div class="event-item-attachment">
+                                            <a href="${event.attachmentUrl}" target="_blank">
+                                                📎 ${event.attachmentName || 'Attachment'}
+                                            </a>
+                                        </div>
+                                    ` : ''}
+                                </div>
+                                <div class="event-item-actions">
+                                    <button class="action-btn" onclick="event.stopPropagation(); openEventDetails('${event.id}')" title="Edit">✏️</button>
+                                    <button class="action-btn delete" onclick="event.stopPropagation(); deleteEvent('${event.id}')" title="Delete">🗑️</button>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                ` : `
+                    <div class="no-events-message">
+                        <div class="empty-state-icon">💝</div>
+                        <p>No plans yet for this special day!</p>
+                        <p class="empty-state-subtext">Add something memorable to share together.</p>
+                    </div>
+                `}
+            </div>
+            <div class="modal-footer">
+                <div class="button-group">
+                    <button class="btn btn-secondary" onclick="openEventModal('${selectedDate}', true, false)">
+                        <span>Add Event</span>
+                        <span>📝</span>
+                    </button>
+                    <button class="btn btn-primary" onclick="openEventModal('${selectedDate}', true, true)">
+                        <span>Create New Memory</span>
+                        <span>💝</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+
+    modal.innerHTML = content;
+
+    // Add the new white card layout styles
+    const styleElement = document.createElement('style');
+    styleElement.textContent = `
+        .daily-events-content {
+            max-width: 600px;
+            padding: 30px;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            color: #333;
+        }
+        .date-header {
+            text-align: center;
+            margin: 15px 0 25px;
+            color: #333;
+            font-family: "Space Grotesk", sans-serif;
+            font-size: 1.2rem;
+            padding-bottom: 15px;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+        }
+        .events-list {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            max-height: 400px;
+            overflow-y: auto;
+            padding-right: 10px;
+            margin: 20px 0;
+        }
+        .event-item {
+            background: white;
+            border-radius: 12px;
+            padding: 16px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+            border: 1px solid rgba(0, 0, 0, 0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 12px;
+        }
+        .event-item-content {
+            flex: 1;
+        }
+        .event-item-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+        .event-item-header h4 {
+            margin: 0;
+            font-size: 1.1rem;
+            color: var(--text-primary);
+            font-weight: 600;
+        }
+        .event-item-details {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin: 8px 0;
+        }
+        .detail-item {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .shared-tag, .personal-tag {
+            font-size: 0.8rem;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-weight: 500;
+        }
+        .shared-tag {
+            background: var(--secondary-gradient);
+            color: white;
+        }
+        .personal-tag {
+            background: rgba(0, 0, 0, 0.05);
+            color: var(--text-secondary);
+        }
+        .event-item-notes {
+            margin-top: 8px;
+            padding-top: 8px;
+            border-top: 1px solid rgba(0, 0, 0, 0.1);
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            line-height: 1.4;
+        }
+        .event-item-attachment {
+            margin-top: 8px;
+            font-size: 0.9rem;
+        }
+        .event-item-attachment a {
+            color: var(--text-secondary);
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .event-item-actions {
+            display: flex;
+            gap: 8px;
+        }
+        .action-btn {
+            background: none;
+            border: none;
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1rem;
+            color: var(--text-secondary);
+            transition: all 0.2s ease;
+        }
+        .action-btn:hover {
+            background: rgba(0, 0, 0, 0.05);
+            transform: translateY(-1px);
+        }
+        .action-btn.delete:hover {
+            background: rgba(255, 87, 87, 0.1);
+            color: #ff5757;
+        }
+        .no-events-message {
+            text-align: center;
+            padding: 40px 20px;
+            color: var(--text-secondary);
+        }
+        .empty-state-icon {
+            font-size: 3rem;
+            margin-bottom: 15px;
+            animation: pulse 2s infinite;
+        }
+        .empty-state-subtext {
+            font-size: 0.9rem;
+            margin-top: 5px;
+            opacity: 0.8;
+        }
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+        .modal-footer {
+            margin-top: 25px;
+            text-align: center;
+            border-top: 1px solid rgba(0, 0, 0, 0.1);
+            padding-top: 20px;
+        }
+        .modal-footer .button-group {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+        }
+        .modal-footer .btn {
+            padding: 12px 24px;
+            border-radius: 25px;
+            border: none;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-family: "Space Grotesk", sans-serif;
+            font-size: 1rem;
+            min-width: 180px;
+        }
+        .modal-footer .btn-primary {
+            background: var(--secondary-gradient);
+            color: white;
+        }
+        .modal-footer .btn-secondary {
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--text-primary);
+            border: 1px solid rgba(0, 0, 0, 0.1);
+        }
+        .modal-footer .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+        }
+    `;
+
+    document.head.appendChild(styleElement);
+    document.body.appendChild(modal);
+
+    // Show the modal with a small delay for animation
+    setTimeout(() => modal.classList.add('active'), 10);
+}
+
+
+
+function getEventsForDate(selectedDate) {
+	console.log(`🔍 getEventsForDate called with: ${selectedDate}`);
+	console.log(`🔍 Total events in global array: ${events.length}`);
+
+	// Filter events that occur on the selected date
+	const matchingEvents = events.filter(event => {
+		const eventStart = new Date(event.startDate);
+		const eventEnd = new Date(event.endDate || event.startDate);
+		const checkDate = new Date(selectedDate);
+
+		const isMatch = checkDate >= eventStart && checkDate <= eventEnd;
+		console.log(`🔍 Checking event "${event.title}": start=${event.startDate}, end=${event.endDate}, check=${selectedDate}, match=${isMatch}`);
+
+		return isMatch;
 	});
 
-	// Clear form fields first
-	if (eventTitle) eventTitle.value = '';
-	if (eventStartDate) eventStartDate.value = '';
-	if (eventEndDate) eventEndDate.value = '';
-	if (eventTime) eventTime.value = '';
-	if (eventLocation) eventLocation.value = '';
-	if (eventNotes) eventNotes.value = '';
-	if (eventShared) eventShared.checked = true;
+	console.log(`🔍 Found ${matchingEvents.length} matching events for date ${selectedDate}`);
+	return matchingEvents;
+}
 
-	// Set dates if provided
-	if (selectedDate) {
-		console.log('Setting date values to:', selectedDate);
-		// Ensure the date is in YYYY-MM-DD format
-		let formattedDate = selectedDate;
-		if (selectedDate.includes('/')) {
-			// Convert from MM/DD/YYYY to YYYY-MM-DD if needed
-			const parts = selectedDate.split('/');
-			if (parts.length === 3) {
-				formattedDate = `${parts[2]}-${parts[0].padStart(2, '0')}-${parts[1].padStart(2, '0')}`;
-			}
-		}
-		console.log('Formatted date:', formattedDate);
 
-		if (eventStartDate) {
-			eventStartDate.value = formattedDate;
-			console.log('eventStartDate set to:', eventStartDate.value);
-		}
-		if (eventEndDate) {
-			eventEndDate.value = formattedDate;
-			console.log('eventEndDate set to:', eventEndDate.value);
-		}
+
+async function deleteEvent(eventId) {
+	console.log('deleteEvent called with ID:', eventId);
+
+	if (!confirm('Are you sure you want to delete this event?')) {
+		console.log('Delete cancelled by user');
+		return;
 	}
 
-	const modalTitle = document.getElementById('event-modal-title');
-	if (modalTitle) modalTitle.textContent = 'Add Event';
+	try {
+		console.log('Attempting to delete event from database:', eventId);
+		await deleteDoc(doc(db, 'events', eventId));
+		console.log('Successfully deleted event from database:', eventId);
 
-	// Setup date validation and open modal
-	setupDateValidation();
-	openModal('eventModal');
+		// Close the day events modal
+		closeModal('day-events-modal');
 
-	console.log('Final form values:', {
-		startDate: eventStartDate?.value,
-		endDate: eventEndDate?.value,
-		title: eventTitle?.value
-	});
+		// Show success notification
+		showNotification('Event deleted successfully!', 'success');
+
+		console.log('Event deletion completed');
+	} catch (error) {
+		console.error('Error deleting event:', error);
+		showNotification('Error deleting event', 'error');
+	}
 }
 
 function openTodoModal(assignee = null) {
@@ -871,16 +1813,21 @@ function openEventDetails(eventId) {
 	if (event) {
 		// Fill form with event data for editing
 		document.getElementById('eventTitle').value = event.title;
-		document.getElementById('eventDate').value = event.date;
+		document.getElementById('eventStartDate').value = event.startDate;
+		document.getElementById('eventEndDate').value = event.endDate || event.startDate;
 		document.getElementById('eventTime').value = event.time || '';
 		document.getElementById('eventLocation').value = event.location || '';
 		document.getElementById('eventNotes').value = event.notes || '';
 		document.getElementById('eventShared').checked = event.shared;
-		document.getElementById('event-modal-title').textContent = 'Edit Event';
+		document.getElementById('event-modal-title').textContent = '✨ Edit Memory ✨';
 
 		// Store event ID for updating
 		document.getElementById('eventForm').dataset.editingId = eventId;
 
+		// Close the daily events modal if it's open
+		closeModal('daily-events-modal');
+
+		// Open the event edit modal
 		openModal('eventModal');
 	}
 }
@@ -888,13 +1835,14 @@ function openEventDetails(eventId) {
 // Event Form Handler
 // addEvent
 document.getElementById('eventForm').addEventListener('submit', async (e) => {
-    console.log('Event form submit triggered!');
+    console.log('🔥 EVENT FORM SUBMIT TRIGGERED');
     e.preventDefault();
     const currentUser = $currentUser.get();
     const button = e.target.querySelector('button[type="submit"]');
 
-    console.log('Current user:', currentUser);
-    console.log('Form data:', {
+    console.log('📝 Current user:', currentUser);
+    console.log('📊 Current workspace:', currentWorkspace);
+    console.log('📋 Form data:', {
         title: document.getElementById('eventTitle').value,
         startDate: document.getElementById('eventStartDate').value,
         endDate: document.getElementById('eventEndDate').value,
@@ -948,16 +1896,22 @@ document.getElementById('eventForm').addEventListener('submit', async (e) => {
 			showNotification('Event updated!', 'success');
 		} else {
 			// Create new event
-			console.log('Creating new event:', eventData);
-			console.log('Event data to be saved:', {
-				title: eventData.title,
-				startDate: eventData.startDate,
-				endDate: eventData.endDate,
-				workspaceId: eventData.workspaceId,
-				createdBy: eventData.createdBy
-			});
+			console.log('🎯 CREATING NEW EVENT');
+			console.log('📄 Event data to be saved:', eventData);
+			console.log('🏢 Target workspace:', currentWorkspace);
+			console.log('👤 Created by user:', currentUser.uid);
+
 			const docRef = await addDoc(collection(db, 'events'), eventData);
-			console.log('Event created with ID:', docRef.id);
+			console.log('✅ Event created with ID:', docRef.id);
+			console.log('🔄 Event creation successful, waiting for listener...');
+
+			// Manually trigger calendar regeneration after a delay
+			console.log('🔄 Scheduling manual calendar regeneration...');
+			setTimeout(() => {
+				console.log('🔄 Manual calendar regeneration triggered after event creation');
+				generateCalendar(currentDate);
+			}, 1000);
+
 			showNotification('Event created!', 'success');
 		}
 
@@ -965,11 +1919,15 @@ document.getElementById('eventForm').addEventListener('submit', async (e) => {
 		delete e.target.dataset.editingId;
 
 		// Wait a moment for the database to update
+		console.log('⏳ Waiting for database sync before regenerating calendar...');
 		setTimeout(() => {
+			console.log('🔄 Manual calendar regeneration triggered');
 			generateCalendar(currentDate); // Refresh the calendar
 		}, 500);
 	} catch (error) {
-		console.error('Error saving event:', error);
+		console.error('❌ Error saving event:', error);
+		console.error('❌ Error code:', error.code);
+		console.error('❌ Error message:', error.message);
 		showNotification('Error saving event', 'error');
 	} finally {
 		showButtonLoading(button, false);
@@ -1138,14 +2096,24 @@ function createTodoElement(todo) {
 		todo.id,
 		'Delete button found:',
 		!!deleteBtn,
+		'Delete button element:',
+		deleteBtn
 	);
 
 	checkbox.addEventListener('click', () => toggleTodo(todo.id));
-	deleteBtn.addEventListener('click', (e) => {
-		console.log('Delete button clicked for todo:', todo.id);
-		e.stopPropagation();
-		deleteTodo(todo.id);
-	});
+	if (deleteBtn) {
+		deleteBtn.addEventListener('click', (e) => {
+			console.log('🗑️ DELETE BUTTON CLICKED for todo:', todo.id);
+			console.log('🗑️ Event target:', e.target);
+			console.log('🗑️ Event target classes:', e.target.classList);
+			console.log('🗑️ Event target data-todo-id:', e.target.dataset.todoId);
+			e.stopPropagation();
+			e.preventDefault();
+			deleteTodo(todo.id);
+		});
+	} else {
+		console.error('❌ Delete button not found for todo:', todo.id);
+	}
 
 	return div;
 }
@@ -1303,7 +2271,216 @@ function loadSavedTheme() {
 
 // Invite System
 function showInviteModal() {
-	openModal('invite-modal');
+    const modal = document.createElement('div');
+    modal.className = 'modal';
+    modal.id = 'invite-modal';
+
+    const inviteCode = document.getElementById('invite-code-text').textContent;
+
+    const content = `
+        <div class="modal-content invite-modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">✨ Share Your Special Space ✨</h3>
+                <button class="close-btn" onclick="closeModal('invite-modal')">&times;</button>
+            </div>
+            <div class="invite-content">
+                <div class="invite-illustration">
+                    <div class="envelope">
+                        <div class="envelope-heart">💌</div>
+                    </div>
+                </div>
+                <div class="invite-section">
+                    <h4>Invite Code</h4>
+                    <div class="invite-code-display">
+                        <span id="invite-code-display">${inviteCode}</span>
+                        <button class="copy-btn" onclick="copyInviteCode()">
+                            <span class="copy-icon">📋</span>
+                            <span class="copy-text">Copy</span>
+                        </button>
+                    </div>
+                </div>
+                <div class="invite-section">
+                    <h4>Send Email Invitation</h4>
+                    <form id="email-invite-form" class="email-invite-form">
+                        <div class="form-group">
+                            <input 
+                                type="email" 
+                                id="invite-email" 
+                                placeholder="Enter email address"
+                                required
+                            >
+                            <button type="submit" class="btn btn-primary">
+                                <span>Send Invitation</span>
+                                <span class="button-loader" style="display: none;"></span>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+                <div class="invite-section">
+                    <h4>Pending Invitations</h4>
+                    <div id="pending-invites" class="pending-invites">
+                        <!-- Pending invites will be inserted here -->
+                        <div class="no-invites-message">
+                            No pending invitations
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    modal.innerHTML = content;
+
+    // Add styles
+    const style = document.createElement('style');
+    style.textContent = `
+        .invite-modal-content {
+            max-width: 500px;
+            background: rgba(255, 255, 255, 0.95);
+            padding: 30px;
+        }
+
+        .invite-content {
+            display: flex;
+            flex-direction: column;
+            gap: 25px;
+        }
+
+        .invite-illustration {
+            text-align: center;
+            margin: 20px 0;
+        }
+
+        .envelope {
+            font-size: 4rem;
+            animation: float 3s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+            100% { transform: translateY(0px); }
+        }
+
+        .invite-section {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 20px;
+            border: 1px solid rgba(0, 0, 0, 0.1);
+        }
+
+        .invite-section h4 {
+            margin: 0 0 15px 0;
+            color: var(--text-primary);
+            font-family: "Space Grotesk", sans-serif;
+        }
+
+        .invite-code-display {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: rgba(0, 0, 0, 0.05);
+            padding: 12px;
+            border-radius: 8px;
+            font-family: monospace;
+            font-size: 1.2rem;
+        }
+
+        .copy-btn {
+            background: var(--secondary-gradient);
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 20px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            transition: all 0.3s ease;
+        }
+
+        .copy-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .email-invite-form .form-group {
+            display: flex;
+            gap: 10px;
+        }
+
+        .email-invite-form input {
+            flex: 1;
+            padding: 12px;
+            border: 1px solid rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+            font-size: 1rem;
+            font-family: "Space Grotesk", sans-serif;
+        }
+
+        .email-invite-form .btn-primary {
+            background: var(--secondary-gradient);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-family: "Space Grotesk", sans-serif;
+            font-size: 1rem;
+        }
+
+        .email-invite-form .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .pending-invites {
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .pending-invite {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+        }
+
+        .invite-status {
+            background: rgba(var(--primary-rgb), 0.1);
+            color: var(--primary);
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 0.8rem;
+        }
+
+        .no-invites-message {
+            text-align: center;
+            padding: 20px;
+            color: var(--text-secondary);
+            font-style: italic;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .pending-invite {
+            animation: fadeIn 0.3s ease-out forwards;
+        }
+    `;
+
+    document.head.appendChild(style);
+    document.body.appendChild(modal);
+    
+    // Show the modal
+    setTimeout(() => openModal('invite-modal'), 10);
+
+    // Load pending invitations
+    loadPendingInvitations();
 }
 
 function showJoinModal() {
@@ -1372,32 +2549,162 @@ document.getElementById('join-form').addEventListener('submit', async (e) => {
 });
 
 function copyInviteCode() {
-	const codeText = document.getElementById('invite-code-text').textContent;
-	navigator.clipboard
-		.writeText(codeText)
-		.then(() => {
-			showNotification('Invite code copied!', 'success');
-		})
-		.catch(() => {
-			showNotification('Failed to copy code', 'error');
-		});
+    const codeText = document.getElementById('invite-code-display').textContent;
+    navigator.clipboard
+        .writeText(codeText)
+        .then(() => {
+            showNotification('Invite code copied! 📋', 'success');
+            
+            // Visual feedback on button
+            const copyBtn = document.querySelector('.copy-btn');
+            if (copyBtn) {
+                const originalText = copyBtn.innerHTML;
+                copyBtn.innerHTML = '<span class="copy-icon">✓</span><span class="copy-text">Copied!</span>';
+                copyBtn.style.background = 'var(--success-gradient)';
+                
+                setTimeout(() => {
+                    copyBtn.innerHTML = originalText;
+                    copyBtn.style.background = 'var(--secondary-gradient)';
+                }, 2000);
+            }
+        })
+        .catch(() => {
+            showNotification('Failed to copy code', 'error');
+        });
 }
 
-// Email invitation (simplified - you'd integrate with an email service)
+async function loadPendingInvitations() {
+    const pendingInvites = document.getElementById('pending-invites');
+    if (!pendingInvites) return;
+
+    try {
+        const invitesQuery = query(
+            collection(db, 'invitations'),
+            where('workspaceId', '==', currentWorkspace),
+            where('status', '==', 'pending'),
+            orderBy('createdAt', 'desc')
+        );
+
+        const snapshot = await getDocs(invitesQuery);
+
+        if (snapshot.empty) {
+            pendingInvites.innerHTML = `
+                <div class="no-invites-message">
+                    No pending invitations
+                </div>
+            `;
+            return;
+        }
+
+        pendingInvites.innerHTML = '';
+        snapshot.forEach(doc => {
+            const invite = doc.data();
+            const inviteElement = document.createElement('div');
+            inviteElement.className = 'pending-invite';
+            inviteElement.innerHTML = `
+                <span class="invite-email">${invite.email}</span>
+                <span class="invite-status">Pending</span>
+                <span class="invite-date">${formatDate(invite.createdAt?.toDate())}</span>
+            `;
+            pendingInvites.appendChild(inviteElement);
+        });
+
+    } catch (error) {
+        console.error('Error loading pending invitations:', error);
+        pendingInvites.innerHTML = `
+            <div class="error-message">
+                Error loading invitations
+            </div>
+        `;
+    }
+}
+
+function formatDate(date) {
+    if (!date) return 'Just now';
+    
+    const now = new Date();
+    const diff = now - date;
+    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+    const hours = Math.floor(diff / (1000 * 60 * 60));
+    const minutes = Math.floor(diff / (1000 * 60));
+
+    if (days > 0) return `${days}d ago`;
+    if (hours > 0) return `${hours}h ago`;
+    if (minutes > 0) return `${minutes}m ago`;
+    return 'Just now';
+}
+
+// Email invitation with Firebase
 document
-	.getElementById('email-invite-form')
-	.addEventListener('submit', async (e) => {
-		e.preventDefault();
+    .getElementById('email-invite-form')
+    .addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const emailInput = document.getElementById('invite-email');
+        const email = emailInput.value.trim();
+        const inviteCode = document.getElementById('invite-code-text').textContent;
+        const currentUser = $currentUser.get();
+        const button = e.target.querySelector('button[type="submit"]');
 
-		const email = document.getElementById('invite-email').value;
-		const inviteCode = document.getElementById('invite-code-text').textContent;
+        if (!email) {
+            showNotification('Please enter an email address', 'error');
+            return;
+        }
 
-		// In a real app, you'd send this via an email service
-		showNotification(
-			`Invite would be sent to ${email} with code: ${inviteCode}`,
-			'success',
-		);
-	});
+        try {
+            showButtonLoading(button, true);
+
+            // Get workspace details for the invitation
+            const workspaceDoc = await getDoc(doc(db, 'workspaces', currentWorkspace));
+            const workspaceData = workspaceDoc.data();
+
+            // Create invitation record in Firebase
+            const inviteData = {
+                email: email,
+                inviteCode: inviteCode,
+                workspaceId: currentWorkspace,
+                workspaceName: workspaceData.name,
+                invitedBy: currentUser.uid,
+                invitedByName: currentUser.displayName || currentUser.email,
+                status: 'pending',
+                createdAt: serverTimestamp(),
+                expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) // 7 days expiry
+            };
+
+            await addDoc(collection(db, 'invitations'), inviteData);
+
+            // Send email using Firebase Cloud Functions (you'll need to set this up)
+            const sendEmailFunction = httpsCallable(functions, 'sendInviteEmail');
+            await sendEmailFunction({
+                to: email,
+                inviteCode: inviteCode,
+                workspaceName: workspaceData.name,
+                invitedByName: currentUser.displayName || currentUser.email
+            });
+
+            // Clear input and show success message
+            emailInput.value = '';
+            showNotification('Invitation sent successfully! 💌', 'success');
+
+            // Update UI to show pending invitation
+            const pendingInvites = document.getElementById('pending-invites');
+            if (pendingInvites) {
+                const inviteElement = document.createElement('div');
+                inviteElement.className = 'pending-invite';
+                inviteElement.innerHTML = `
+                    <span class="invite-email">${email}</span>
+                    <span class="invite-status">Pending</span>
+                    <span class="invite-date">Just now</span>
+                `;
+                pendingInvites.insertBefore(inviteElement, pendingInvites.firstChild);
+            }
+
+        } catch (error) {
+            console.error('Error sending invitation:', error);
+            showNotification('Failed to send invitation. Please try again.', 'error');
+        } finally {
+            showButtonLoading(button, false);
+        }
+    });
 
 // Utility Functions
 function generateInviteCode() {
@@ -1721,13 +3028,23 @@ document.addEventListener('keydown', (e) => {
 // Fallback event listener for delete buttons
 document.addEventListener('click', (e) => {
 	if (e.target.classList.contains('delete-todo-btn')) {
+		console.log('🎯 Fallback delete handler triggered!');
+		console.log('🎯 Event target:', e.target);
+		console.log('🎯 Event target classes:', e.target.classList);
+		console.log('🎯 Event target data-todo-id:', e.target.dataset.todoId);
 		e.stopPropagation();
+		e.preventDefault();
+
 		const todoId =
 			e.target.dataset.todoId ||
 			e.target.closest('[data-todo-id]')?.dataset.todoId;
+
+		console.log('🎯 Extracted todoId:', todoId);
 		if (todoId) {
 			console.log('Fallback delete handler triggered for todo:', todoId);
 			deleteTodo(todoId);
+		} else {
+			console.error('❌ Could not extract todoId from delete button');
 		}
 	}
 });
@@ -1869,3 +3186,6 @@ window.showMembersModal = showMembersModal;
 window.removeMember = removeMember;
 window.showThemeModal = showThemeModal;
 window.setTheme = setTheme;
+window.clearAllCalendarEvents = clearAllCalendarEvents;
+window.openDayEventsModal = openDayEventsModal;
+window.deleteEvent = deleteEvent;

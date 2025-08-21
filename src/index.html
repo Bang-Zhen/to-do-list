@@ -421,6 +421,26 @@
             </div>
         </div>
 
+        <!-- Day Events Modal -->
+        <div id="day-events-modal" class="modal">
+            <div class="modal-content day-events-content">
+                <div class="modal-header">
+                    <h3 class="modal-title" id="day-events-title">Events for <span id="selected-date-text"></span></h3>
+                    <button class="close-btn" onclick="closeModal('day-events-modal')">&times;</button>
+                </div>
+                <div class="day-events-container">
+                    <div id="day-events-list" class="day-events-list">
+                        <!-- Events will be populated here -->
+                    </div>
+                    <div class="day-events-actions">
+                        <button class="btn btn-primary" onclick="openEventModal(document.getElementById('day-events-modal').dataset.selectedDate)">
+                            <span>+ Add Event</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- Invite Modal -->
         <div id="invite-modal" class="modal">
             <div class="modal-content">
