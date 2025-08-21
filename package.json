@@ -6,8 +6,11 @@
 	"scripts": {
 		"test": "echo \"Error: no test specified\" && exit 1",
 		"dev": "vite dev",
+		"build": "vite build",
 		"fmt": "biome format --write",
-		"fmt-lint": "biome check --write"
+		"fmt-lint": "biome check --write",
+		"predeploy": "vite build",
+		"deploy": "gh-pages -d dist"
 	},
 	"keywords": [],
 	"author": "",
