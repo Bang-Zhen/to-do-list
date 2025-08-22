@@ -1080,8 +1080,10 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover {
 }
 
 .modal-title {
+	font-family: "Outfit", sans-serif;
 	font-size: 1.5rem;
 	font-weight: 600;
+	letter-spacing: -0.02em;
 	color: #333;
 }
 
@@ -1114,9 +1116,10 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover {
 	display: block;
 	margin-bottom: 8px;
 	color: #333;
-	font-weight: 500;
+	font-family: "Outfit", sans-serif;
+	font-weight: 600;
 	font-size: 0.9rem;
-	letter-spacing: 0.25px;
+	letter-spacing: -0.02em;
 }
 
 .form-group input,
@@ -1126,8 +1129,12 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover {
 	padding: 14px 16px;
 	border: 2px solid rgba(0, 0, 0, 0.1);
 	border-radius: 12px;
-	font-size: 16px;
+	font-family: "Outfit", sans-serif;
+	font-weight: 600;
+	font-size: 17px;
+	letter-spacing: -0.02em;
 	background: rgba(255, 255, 255, 0.9);
+	color: #333; /* Dark text for light backgrounds */
 	transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 	box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 	position: relative;
@@ -1138,7 +1145,10 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover {
 .form-group textarea::placeholder,
 .form-group select::placeholder {
 	color: #9ca3af;
-	font-size: 15px;
+	font-family: "Outfit", sans-serif;
+	font-weight: 600;
+	font-size: 17px;
+	letter-spacing: -0.02em;
 }
 
 .form-group input:focus,
@@ -1147,6 +1157,7 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover {
 	outline: none;
 	border-color: var(--secondary-gradient);
 	background: white;
+	color: #333; /* Dark text for light backgrounds */
 	box-shadow: 0 0 0 3px rgba(78, 205, 196, 0.1), 0 4px 12px rgba(0, 0, 0, 0.1);
 	transform: translateY(-1px);
 }
@@ -1156,18 +1167,25 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover {
 .form-group select:hover {
 	border-color: rgba(0, 0, 0, 0.15);
 	background: rgba(255, 255, 255, 0.95);
+	color: #333; /* Dark text for light backgrounds */
 }
 
 /* Custom Calendar Picker */
 input[type="date"] {
 	position: relative;
 	padding-right: 35px;
+	font-family: "Outfit", sans-serif;
+	font-weight: 600;
+	font-size: 17px;
+	letter-spacing: -0.02em;
 	transition: all 0.3s ease;
+	color: #333; /* Dark text for light backgrounds */
 }
 
 input[type="date"]:focus {
 	transform: translateY(-1px);
 	box-shadow: 0 0 0 3px rgba(78, 205, 196, 0.1);
+	color: #333; /* Dark text for light backgrounds */
 }
 
 input[type="date"]::-webkit-calendar-picker-indicator {
@@ -1199,24 +1217,24 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover {
 
 /* Custom date picker styling for better theme integration */
 input[type="date"]::-webkit-datetime-edit {
-	color: var(--text-primary);
+	color: #333; /* Dark text for light backgrounds */
 	font-family: inherit;
 	font-size: inherit;
 }
 
 input[type="date"]::-webkit-datetime-edit-fields-wrapper {
-	color: var(--text-primary);
+	color: #333; /* Dark text for light backgrounds */
 }
 
 input[type="date"]::-webkit-datetime-edit-text {
-	color: var(--text-secondary);
+	color: #666; /* Dark gray for separators */
 	padding: 0 2px;
 }
 
 input[type="date"]::-webkit-datetime-edit-month-field,
 input[type="date"]::-webkit-datetime-edit-day-field,
 input[type="date"]::-webkit-datetime-edit-year-field {
-	color: var(--text-primary);
+	color: #333; /* Dark text for light backgrounds */
 }
 
 input[type="date"]::-webkit-calendar-picker-indicator {

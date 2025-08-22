@@ -466,14 +466,44 @@ async function loadWorkspace() {
 	}
 }
 
-function updatePartnerInfo(members) {
+async function updatePartnerInfo(members) {
 	const partnerAvatar = document.getElementById('partner-avatar');
+	const partnerNameTitle = document.getElementById('user2-todos-title');
+
 	if (members.length > 1) {
 		partnerAvatar.style.display = 'flex';
 		partnerAvatar.classList.add('online');
-		// In a real app, you'd fetch partner info here
+
+		// Get partner information
+		const currentUser = $currentUser.get();
+		const partnerId = members.find(memberId => memberId !== currentUser.uid);
+
+		if (partnerId) {
+			try {
+				const partnerDoc = await getDoc(doc(db, 'users', partnerId));
+				if (partnerDoc.exists()) {
+					const partnerData = partnerDoc.data();
+					const partnerName = partnerData.displayName || partnerData.email || 'Partner';
+
+					// Update the partner name in the todo section
+					if (partnerNameTitle) {
+						partnerNameTitle.textContent = `${partnerName}'s Tasks`;
+					}
+				}
+			} catch (error) {
+				console.error('Error fetching partner info:', error);
+				// Fallback to generic name
+				if (partnerNameTitle) {
+					partnerNameTitle.textContent = "Partner's Tasks";
+				}
+			}
+		}
 	} else {
 		partnerAvatar.style.display = 'none';
+		// Reset to default when no partner
+		if (partnerNameTitle) {
+			partnerNameTitle.textContent = "Partner's Tasks";
+		}
 	}
 }
 
