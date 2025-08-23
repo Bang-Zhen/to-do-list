@@ -29,7 +29,7 @@
                         <input type="email" id="login-email" placeholder="Email" required>
                     </div>
                     <div class="form-group">
-                        <input type="password" id="login-password" placeholder="Password" required>
+                        <input type="password" id="login-password" placeholder="Password" required autocomplete="current-password">
                     </div>
                     <button type="submit" class="btn btn-primary full-width">
                         <span>Sign In</span>
@@ -61,7 +61,7 @@
                         <input type="email" id="signup-email" placeholder="Email" required>
                     </div>
                     <div class="form-group">
-                        <input type="password" id="signup-password" placeholder="Password (6+ characters)" required minlength="6">
+                        <input type="password" id="signup-password" placeholder="Password (6+ characters)" required minlength="6" autocomplete="new-password">
                     </div>
                     <button type="submit" class="btn btn-primary full-width">
                         <span>Create Account</span>
@@ -184,8 +184,9 @@
         <!-- Tab Navigation -->
         <div class="tab-navigation">
             <button class="tab-btn active" onclick="switchTab('calendar')" data-tooltip="View and manage your calendar">📅 Calendar</button>
-            <button class="tab-btn" onclick="switchTab('todo')" data-tooltip="Manage personal to-do lists">✅ To-Do Lists</button>
-            <button class="tab-btn" onclick="switchTab('shared')" data-tooltip="View shared tasks and activities">🤝 Shared Tasks</button>
+            <button class="tab-btn" onclick="switchTab('my-tasks')" data-tooltip="View your personal tasks">✅ My Tasks</button>
+            <button class="tab-btn" onclick="switchTab('partner-tasks')" data-tooltip="View partner's tasks">👥 <span id="partner-tab-name">Partner's Tasks</span></button>
+            <button class="tab-btn" onclick="switchTab('shared-tasks')" data-tooltip="View shared tasks">🤝 Shared Tasks</button>
         </div>
 
         <!-- Content Area -->
@@ -205,32 +206,38 @@
                 </div>
             </div>
 
-            <!-- To-Do View -->
-            <div id="todo-view" class="todo-container">
+            <!-- My Tasks View -->
+            <div id="my-tasks-view" class="todo-container hidden">
                 <div class="todo-header">
-                    <h2 class="section-title">To-Do Lists</h2>
-                    <button class="add-event-btn" onclick="openTodoModal()">+ Add Task</button>
+                    <h2 class="section-title">My Tasks</h2>
+                    <button class="add-event-btn" onclick="openTodoModal('user1')">+ Add Task</button>
                 </div>
-                <div class="todo-lists">
-                    <div class="todo-list">
-                        <h3 id="user1-todos-title">My Tasks</h3>
+                <div class="todo-lists single-column">
+                    <div class="todo-list full-width">
                         <div id="user1-todos" class="todo-list-content">
                             <!-- User 1 todos will be generated here -->
                         </div>
-                        <div class="add-todo-btn" onclick="openTodoModal('user1')">+ Add Task</div>
                     </div>
-                    <div class="todo-list">
-                        <h3 id="user2-todos-title">Partner's Tasks</h3>
+                </div>
+            </div>
+
+            <!-- Partner Tasks View -->
+            <div id="partner-tasks-view" class="todo-container hidden">
+                <div class="todo-header">
+                    <h2 class="section-title" id="partner-view-title">Partner's Tasks</h2>
+                    <button class="add-event-btn" onclick="openTodoModal('user2')">+ Add Task</button>
+                </div>
+                <div class="todo-lists single-column">
+                    <div class="todo-list full-width">
                         <div id="user2-todos" class="todo-list-content">
                             <!-- User 2 todos will be generated here -->
                         </div>
-                        <div class="add-todo-btn" onclick="openTodoModal('user2')">+ Add Task</div>
                     </div>
                 </div>
             </div>
 
             <!-- Shared Tasks View -->
-            <div id="shared-view" class="todo-container hidden">
+            <div id="shared-tasks-view" class="todo-container hidden">
                 <div class="todo-header">
                     <h2 class="section-title">Shared Tasks</h2>
                     <button class="add-event-btn" onclick="openTodoModal('shared')">+ Add Shared Task</button>

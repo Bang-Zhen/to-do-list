@@ -41,7 +41,39 @@ let unsubscribeTodos = null;
 let unsubscribeWorkspace = null;
 
 $todos.subscribe((todos) => {
+	console.log('📡 $todos.subscribe triggered with', todos.length, 'todos');
 	renderTodos(todos);
+
+	// Also refresh the current active tab's content when todos change
+	const activeTab = document.querySelector('.tab-btn.active');
+	console.log('🔍 Active tab found:', !!activeTab);
+
+	if (activeTab) {
+		const activeTabText = activeTab.textContent.trim();
+		let tabName = 'my-tasks'; // default
+
+		if (activeTabText.includes('Calendar')) {
+			tabName = 'calendar';
+		} else if (activeTabText.includes('My Tasks')) {
+			tabName = 'my-tasks';
+		} else if (activeTabText.includes('Partner')) {
+			tabName = 'partner-tasks';
+		} else if (activeTabText.includes('Shared')) {
+			tabName = 'shared-tasks';
+		}
+
+		console.log('🎯 Active tab name:', tabName, 'from text:', activeTabText);
+
+		// Only refresh task tabs, not calendar
+		if (tabName !== 'calendar') {
+			console.log('🔄 Refreshing filtered todos for tab:', tabName);
+			renderFilteredTodos(tabName).catch(console.error);
+		} else {
+			console.log('📅 Skipping calendar tab refresh');
+		}
+	} else {
+		console.log('❌ No active tab found, cannot refresh filtered todos');
+	}
 });
 
 $currentUser.subscribe((user) => {
@@ -460,6 +492,16 @@ async function loadWorkspace() {
 
 		generateCalendar(currentDate);
 		console.log('Workspace loaded successfully');
+
+		// Set default tab to "My Tasks" if no tab is active
+		const activeTab = document.querySelector('.tab-btn.active');
+		console.log('🚀 Checking for active tab after workspace load. Active tab found:', !!activeTab);
+		if (!activeTab) {
+			console.log('🎯 No active tab found, setting default to my-tasks');
+			switchTab('my-tasks').catch(console.error);
+		} else {
+			console.log('✅ Active tab already exists:', activeTab.textContent.trim());
+		}
 	} catch (error) {
 		console.error('Error loading workspace:', error);
 		showNotification(`Error loading workspace: ${error.message}`, 'error');
@@ -468,43 +510,20 @@ async function loadWorkspace() {
 
 async function updatePartnerInfo(members) {
 	const partnerAvatar = document.getElementById('partner-avatar');
-	const partnerNameTitle = document.getElementById('user2-todos-title');
 
 	if (members.length > 1) {
-		partnerAvatar.style.display = 'flex';
-		partnerAvatar.classList.add('online');
-
-		// Get partner information
-		const currentUser = $currentUser.get();
-		const partnerId = members.find(memberId => memberId !== currentUser.uid);
-
-		if (partnerId) {
-			try {
-				const partnerDoc = await getDoc(doc(db, 'users', partnerId));
-				if (partnerDoc.exists()) {
-					const partnerData = partnerDoc.data();
-					const partnerName = partnerData.displayName || partnerData.email || 'Partner';
-
-					// Update the partner name in the todo section
-					if (partnerNameTitle) {
-						partnerNameTitle.textContent = `${partnerName}'s Tasks`;
-					}
-				}
-			} catch (error) {
-				console.error('Error fetching partner info:', error);
-				// Fallback to generic name
-				if (partnerNameTitle) {
-					partnerNameTitle.textContent = "Partner's Tasks";
-				}
-			}
+		if (partnerAvatar) {
+			partnerAvatar.style.display = 'flex';
+			partnerAvatar.classList.add('online');
 		}
 	} else {
-		partnerAvatar.style.display = 'none';
-		// Reset to default when no partner
-		if (partnerNameTitle) {
-			partnerNameTitle.textContent = "Partner's Tasks";
+		if (partnerAvatar) {
+			partnerAvatar.style.display = 'none';
 		}
 	}
+
+	// Update partner name in tab (this will be handled by updatePartnerTabName)
+	await updatePartnerTabName();
 }
 
 // Real-time Event Listener
@@ -1021,32 +1040,232 @@ function clearAllCalendarEvents() {
 }
 
 // Tab Switching
-function switchTab(tab) {
+async function switchTab(tab) {
+	console.log(`🔄 switchTab called with tab: ${tab}`);
+
 	const calendarView = document.getElementById('calendar-view');
-	const todoView = document.getElementById('todo-view');
-	const sharedView = document.getElementById('shared-view');
+	const myTasksView = document.getElementById('my-tasks-view');
+	const partnerTasksView = document.getElementById('partner-tasks-view');
+	const sharedTasksView = document.getElementById('shared-tasks-view');
 	const tabBtns = document.querySelectorAll('.tab-btn');
 
-	// Remove active class from all views and tabs
-	calendarView.classList.add('hidden');
-	todoView.classList.remove('active');
-	sharedView.classList.remove('active');
+	console.log('📋 Views found:', {
+		calendar: !!calendarView,
+		myTasks: !!myTasksView,
+		partnerTasks: !!partnerTasksView,
+		sharedTasks: !!sharedTasksView
+	});
+	console.log('🔘 Tab buttons found:', tabBtns.length);
+
+	// Hide all views
+	const allViews = [calendarView, myTasksView, partnerTasksView, sharedTasksView];
+	allViews.forEach(view => {
+		if (view) {
+			view.classList.add('hidden');
+			view.classList.remove('active');
+		}
+	});
+
+	// Remove active class from all tabs
 	tabBtns.forEach((btn) => btn.classList.remove('active'));
 
 	// Activate the selected tab
 	switch (tab) {
 		case 'calendar':
-			calendarView.classList.remove('hidden');
+			if (calendarView) {
+				calendarView.classList.remove('hidden');
+				calendarView.classList.add('active');
+			}
 			tabBtns[0].classList.add('active');
 			break;
-		case 'todo':
-			todoView.classList.add('active');
-			tabBtns[1].classList.add('active');
+		case 'my-tasks':
+			console.log('🎯 Activating My Tasks tab');
+			if (myTasksView) {
+				myTasksView.classList.remove('hidden');
+				myTasksView.classList.add('active');
+				console.log('✅ My Tasks view activated');
+			} else {
+				console.log('❌ My Tasks view not found');
+			}
+			if (tabBtns[1]) {
+				tabBtns[1].classList.add('active');
+				console.log('✅ My Tasks tab button activated');
+			} else {
+				console.log('❌ My Tasks tab button not found');
+			}
+			console.log('🔄 Calling renderFilteredTodos for my-tasks');
+			await renderFilteredTodos('my-tasks');
 			break;
-		case 'shared':
-			sharedView.classList.add('active');
+		case 'partner-tasks':
+			if (partnerTasksView) {
+				partnerTasksView.classList.remove('hidden');
+				partnerTasksView.classList.add('active');
+			}
 			tabBtns[2].classList.add('active');
+			await renderFilteredTodos('partner-tasks');
 			break;
+		case 'shared-tasks':
+			if (sharedTasksView) {
+				sharedTasksView.classList.remove('hidden');
+				sharedTasksView.classList.add('active');
+			}
+			tabBtns[3].classList.add('active');
+			await renderFilteredTodos('shared-tasks');
+			break;
+	}
+
+	// Update partner name in tab
+	updatePartnerTabName();
+}
+
+// Function to render filtered todos based on selected tab
+async function renderFilteredTodos(tab) {
+	const currentUser = $currentUser.get();
+	const todos = $todos.get();
+
+	console.log(`🔄 renderFilteredTodos called for tab: ${tab}`);
+	console.log(`👤 Current user:`, currentUser?.uid);
+	console.log(`📊 Total todos in store:`, todos.length);
+
+	if (!currentUser) {
+		console.log('❌ No current user, returning early');
+		return;
+	}
+
+	// Get the target container based on tab
+	let targetContainer;
+	switch (tab) {
+		case 'my-tasks':
+			targetContainer = document.getElementById('user1-todos');
+			console.log(`🎯 My Tasks container (user1-todos) found:`, !!targetContainer);
+			break;
+		case 'partner-tasks':
+			targetContainer = document.getElementById('user2-todos');
+			console.log(`🎯 Partner Tasks container (user2-todos) found:`, !!targetContainer);
+			break;
+		case 'shared-tasks':
+			targetContainer = document.getElementById('shared-todos');
+			console.log(`🎯 Shared Tasks container (shared-todos) found:`, !!targetContainer);
+			break;
+		default:
+			console.log(`❌ Unknown tab: ${tab}`);
+			return;
+	}
+
+	if (!targetContainer) {
+		console.log(`❌ Target container not found for tab: ${tab}`);
+		return;
+	}
+
+	console.log(`🧹 Clearing container for tab: ${tab}`);
+	// Clear the container
+	targetContainer.innerHTML = '';
+
+	// Filter todos based on tab
+	let filteredTodos = [];
+	switch (tab) {
+		case 'my-tasks':
+			filteredTodos = todos.filter(todo => todo.assignee === currentUser.uid);
+			console.log(`✅ My Tasks filtered: ${filteredTodos.length} todos`);
+			break;
+		case 'partner-tasks':
+			// Get partner ID
+			const partnerId = await getPartnerId();
+			console.log(`👥 Partner ID:`, partnerId);
+			filteredTodos = todos.filter(todo => todo.assignee === partnerId);
+			console.log(`✅ Partner Tasks filtered: ${filteredTodos.length} todos`);
+			break;
+		case 'shared-tasks':
+			filteredTodos = todos.filter(todo => todo.assignee === 'shared');
+			console.log(`✅ Shared Tasks filtered: ${filteredTodos.length} todos`);
+			break;
+	}
+
+	console.log(`📝 Rendering ${filteredTodos.length} todos for tab: ${tab}`);
+
+	// Render filtered todos
+	filteredTodos.forEach(todo => {
+		const todoElement = createTodoElement(todo);
+		targetContainer.appendChild(todoElement);
+		console.log(`➕ Added todo element: ${todo.title} (ID: ${todo.id})`);
+	});
+
+	// Update empty state message
+	updateEmptyState(tab, filteredTodos.length === 0);
+	console.log(`✅ renderFilteredTodos completed for tab: ${tab}`);
+}
+
+// Helper function to get partner ID
+async function getPartnerId() {
+	const currentUser = $currentUser.get();
+	if (!currentUser || !currentWorkspace) return null;
+
+	try {
+		const workspaceDoc = await getDoc(doc(db, 'workspaces', currentWorkspace));
+		if (workspaceDoc.exists()) {
+			const workspaceData = workspaceDoc.data();
+			const partnerId = workspaceData.members.find(memberId => memberId !== currentUser.uid);
+			return partnerId || null;
+		}
+	} catch (error) {
+		console.error('Error getting partner ID:', error);
+	}
+	return null;
+}
+
+// Function to update partner name in tab
+async function updatePartnerTabName() {
+	const partnerTabName = document.getElementById('partner-tab-name');
+	if (!partnerTabName) return;
+
+	try {
+		const currentUser = $currentUser.get();
+		if (!currentUser || !currentWorkspace) {
+			partnerTabName.textContent = "Partner's Tasks";
+			return;
+		}
+
+		// Get workspace data to find partner
+		const workspaceDoc = await getDoc(doc(db, 'workspaces', currentWorkspace));
+		if (workspaceDoc.exists()) {
+			const workspaceData = workspaceDoc.data();
+			const partnerId = workspaceData.members.find(memberId => memberId !== currentUser.uid);
+
+			if (partnerId) {
+				const partnerDoc = await getDoc(doc(db, 'users', partnerId));
+				if (partnerDoc.exists()) {
+					const partnerData = partnerDoc.data();
+					const partnerName = partnerData.displayName || partnerData.email || 'Partner';
+					partnerTabName.textContent = `${partnerName}'s Tasks`;
+				} else {
+					partnerTabName.textContent = "Partner's Tasks";
+				}
+			} else {
+				partnerTabName.textContent = "Partner's Tasks";
+			}
+		}
+	} catch (error) {
+		console.error('Error updating partner tab name:', error);
+		partnerTabName.textContent = "Partner's Tasks";
+	}
+}
+
+// Function to update empty state messages
+function updateEmptyState(tab, isEmpty) {
+	const emptyStateSelector = `#${tab}-view .empty-state`;
+	const containerSelector = `#${tab}-container`;
+
+	const emptyStateElement = document.querySelector(emptyStateSelector);
+	const containerElement = document.querySelector(containerSelector);
+
+	if (!emptyStateElement || !containerElement) return;
+
+	if (isEmpty) {
+		emptyStateElement.style.display = 'block';
+		containerElement.style.display = 'none';
+	} else {
+		emptyStateElement.style.display = 'none';
+		containerElement.style.display = 'block';
 	}
 }
 
@@ -1831,10 +2050,21 @@ async function deleteEvent(eventId) {
 }
 
 function openTodoModal(assignee = null) {
+	const assigneeSelect = document.getElementById('todoAssignee');
+
 	if (assignee) {
-		document.getElementById('todoAssignee').value =
-			assignee === 'user1' ? $currentUser.get()?.uid : 'shared';
+		if (assignee === 'user1') {
+			assigneeSelect.value = 'user1'; // Set to "Me"
+		} else if (assignee === 'user2') {
+			assigneeSelect.value = 'user2'; // Set to "Partner"
+		} else if (assignee === 'shared') {
+			assigneeSelect.value = 'shared'; // Set to "Both (Shared)"
+		}
+	} else {
+		// Default to current user if no specific assignee
+		assigneeSelect.value = 'user1';
 	}
+
 	openModal('todoModal');
 }
 
@@ -1975,11 +2205,24 @@ document.getElementById('todoForm').addEventListener('submit', async (e) => {
 		return;
 	}
 
+	// Map form values to actual user IDs
+	let assigneeValue = document.getElementById('todoAssignee').value;
+	if (assigneeValue === 'user1') {
+		assigneeValue = currentUser.uid; // Current user
+	} else if (assigneeValue === 'user2') {
+		// Get partner ID from workspace members
+		const workspaceDoc = await getDoc(doc(db, 'workspaces', currentWorkspace));
+		const workspaceData = workspaceDoc.data();
+		const partnerId = workspaceData.members.find(memberId => memberId !== currentUser.uid);
+		assigneeValue = partnerId || 'shared'; // Fallback to shared if no partner
+	}
+	// 'shared' value remains as is
+
 	const todoData = {
 		title: document.getElementById('todoTitle').value,
 		dueDate: document.getElementById('todoDueDate').value,
 		notes: document.getElementById('todoNotes').value,
-		assignee: document.getElementById('todoAssignee').value,
+		assignee: assigneeValue,
 		completed: false,
 		workspaceId: currentWorkspace,
 		createdBy: currentUser.uid,
@@ -1997,22 +2240,29 @@ document.getElementById('todoForm').addEventListener('submit', async (e) => {
 		todoElement.style.opacity = '0';
 		todoElement.style.transform = 'translateY(20px)';
 
-		// Add to appropriate container
-		const container =
-			todoData.assignee === 'shared'
-				? document.getElementById('shared-todos')
-				: todoData.assignee === currentUser.uid
-					? document.getElementById('user1-todos')
-					: document.getElementById('user2-todos');
+		// Add to appropriate container based on current active tab
+		const activeTab = document.querySelector('.tab-btn.active');
+		if (activeTab) {
+			const activeTabText = activeTab.textContent.trim();
+			let targetContainer = null;
 
-		if (container) {
-			container.insertBefore(todoElement, container.firstChild);
-			// Trigger animation
-			requestAnimationFrame(() => {
-				todoElement.style.transition = 'all 0.3s ease';
-				todoElement.style.opacity = '1';
-				todoElement.style.transform = 'translateY(0)';
-			});
+			if (activeTabText.includes('My Tasks') && todoData.assignee === currentUser.uid) {
+				targetContainer = document.getElementById('my-tasks-container');
+			} else if (activeTabText.includes('Partner') && todoData.assignee !== currentUser.uid && todoData.assignee !== 'shared') {
+				targetContainer = document.getElementById('partner-tasks-container');
+			} else if (activeTabText.includes('Shared') && todoData.assignee === 'shared') {
+				targetContainer = document.getElementById('shared-tasks-container');
+			}
+
+			if (targetContainer) {
+				targetContainer.insertBefore(todoElement, targetContainer.firstChild);
+				// Trigger animation
+				requestAnimationFrame(() => {
+					todoElement.style.transition = 'all 0.3s ease';
+					todoElement.style.opacity = '1';
+					todoElement.style.transform = 'translateY(0)';
+				});
+			}
 		}
 
 		showNotification('Task created! 🎉', 'success');
@@ -2049,18 +2299,6 @@ function renderTodos(todos) {
 	const currentUser = $currentUser.get();
 	console.log('Rendering todos for user:', currentUser?.uid);
 
-	const user1Container = document.getElementById('user1-todos');
-	const user2Container = document.getElementById('user2-todos');
-	const sharedContainer = document.getElementById('shared-todos');
-
-	user1Container.innerHTML = '';
-	user2Container.innerHTML = '';
-	sharedContainer.innerHTML = '';
-
-	// Update section titles with the new font
-	document.getElementById('user1-todos-title').textContent = 'My Tasks';
-	document.getElementById('user2-todos-title').textContent = "Partner's Tasks";
-
 	// Update progress bar
 	updateProgress();
 
@@ -2074,20 +2312,17 @@ function renderTodos(todos) {
 	const progressFill = document.querySelector('.progress-fill');
 	const progressText = document.querySelector('.progress-text');
 
-	progressFill.style.width = `${progressPercentage}%`;
-	progressText.textContent = `${progressPercentage}% Complete (${completedTasks}/${totalTasks} tasks)`;
+	if (progressFill) {
+		progressFill.style.width = `${progressPercentage}%`;
+	}
+	if (progressText) {
+		progressText.textContent = `${progressPercentage}% Complete (${completedTasks}/${totalTasks} tasks)`;
+	}
 
-	todos.forEach((todo) => {
-		const todoElement = createTodoElement(todo);
-
-		if (todo.assignee === currentUser.uid || todo.assignee === 'user1') {
-			user1Container.appendChild(todoElement.cloneNode(true));
-		} else if (todo.assignee === 'shared') {
-			sharedContainer.appendChild(todoElement.cloneNode(true));
-		} else {
-			user2Container.appendChild(todoElement.cloneNode(true));
-		}
-	});
+	// Note: Individual container rendering is now handled by renderFilteredTodos()
+	// which is called when switching tabs. This prevents conflicts between
+	// the old 3-column system and the new 4-tab system.
+	console.log('renderTodos completed - individual tabs will be populated by renderFilteredTodos()');
 }
 
 function createTodoElement(todo) {
@@ -2130,7 +2365,23 @@ function createTodoElement(todo) {
 		deleteBtn
 	);
 
-	checkbox.addEventListener('click', () => toggleTodo(todo.id));
+	checkbox.addEventListener('click', (e) => {
+		console.log('✅ Checkbox clicked for todo:', todo.id);
+		console.log('✅ Event target:', e.target);
+		console.log('✅ Event target classes:', e.target.classList);
+		console.log('✅ Event target parent element:', e.target.parentElement);
+		console.log('✅ Event target parent classes:', e.target.parentElement?.classList);
+		console.log('✅ Checkbox computed style pointer-events:', getComputedStyle(e.target).pointerEvents);
+
+		// Check if parent has loading class
+		const parentTodoItem = e.target.closest('.todo-item');
+		if (parentTodoItem?.classList.contains('loading')) {
+			console.log('⚠️ Parent todo item has loading class, preventing click');
+			return;
+		}
+
+		toggleTodo(todo.id);
+	});
 	if (deleteBtn) {
 		deleteBtn.addEventListener('click', (e) => {
 			console.log('🗑️ DELETE BUTTON CLICKED for todo:', todo.id);
@@ -2149,12 +2400,28 @@ function createTodoElement(todo) {
 }
 
 async function toggleTodo(todoId) {
-	const todo = $todos.get().find((t) => t.id === todoId);
+	console.log('🔄 toggleTodo called with ID:', todoId);
+	const todos = $todos.get();
+	console.log('📊 All todos in store:', todos);
+	const todo = todos.find((t) => t.id === todoId);
+	console.log('🎯 Found todo:', todo);
+
+	// Add visual feedback immediately
+	const todoElements = document.querySelectorAll(`[data-todo-id="${todoId}"]`);
+	console.log('📋 Todo elements found:', todoElements.length);
+
+	if (todoElements.length === 0) {
+		console.error('❌ No todo elements found with data-todo-id:', todoId);
+		return;
+	}
+
 	if (todo) {
+		console.log('✅ Todo found, updating completion status');
 		try {
 			const todoElements = document.querySelectorAll(
 				`[data-todo-id="${todoId}"]`,
 			);
+			console.log('📋 Todo elements found:', todoElements.length);
 
 			// Animate completion
 			todoElements.forEach((element) => {
@@ -2165,20 +2432,26 @@ async function toggleTodo(todoId) {
 			await new Promise((resolve) => setTimeout(resolve, 500));
 
 			// Update the todo
+			console.log('🔥 Updating todo in database...');
 			await updateDoc(doc(db, 'todos', todoId), {
 				completed: !todo.completed,
 				updatedAt: serverTimestamp(),
 			});
+			console.log('✅ Todo updated successfully in database');
 
 			// If completing the todo, add delete button
 			if (!todo.completed) {
 				todoElements.forEach((element) => {
 					const todoText = element.querySelector('.todo-text');
-					const deleteBtn = document.createElement('button');
-					deleteBtn.className = 'delete-todo-btn';
-					deleteBtn.innerHTML = 'Delete';
-					deleteBtn.onclick = () => deleteTodo(todoId);
-					todoText.appendChild(deleteBtn);
+					if (todoText) {  // Add null check
+						const deleteBtn = document.createElement('button');
+						deleteBtn.className = 'delete-todo-btn';
+						deleteBtn.innerHTML = 'Delete';
+						deleteBtn.onclick = () => deleteTodo(todoId);
+						todoText.appendChild(deleteBtn);
+					} else {
+						console.error('❌ Could not find .todo-text element in todo item:', element);
+					}
 				});
 			}
 
@@ -2186,9 +2459,11 @@ async function toggleTodo(todoId) {
 				showNotification('Task completed! 🎉', 'success');
 			}
 		} catch (error) {
-			console.error('Error updating todo:', error);
+			console.error('❌ Error updating todo:', error);
 			showNotification('Error updating task', 'error');
 		}
+	} else {
+		console.error('❌ Todo not found in store with ID:', todoId);
 	}
 }
 
@@ -3046,12 +3321,22 @@ document.addEventListener('keydown', (e) => {
 
 	if (e.key === '1' && e.ctrlKey) {
 		e.preventDefault();
-		switchTab('calendar');
+		switchTab('calendar').catch(console.error);
 	}
 
 	if (e.key === '2' && e.ctrlKey) {
 		e.preventDefault();
-		switchTab('todo');
+		switchTab('my-tasks').catch(console.error);
+	}
+
+	if (e.key === '3' && e.ctrlKey) {
+		e.preventDefault();
+		switchTab('partner-tasks').catch(console.error);
+	}
+
+	if (e.key === '4' && e.ctrlKey) {
+		e.preventDefault();
+		switchTab('shared-tasks').catch(console.error);
 	}
 });
 
@@ -3098,14 +3383,28 @@ function handleSwipe() {
 
 	if (Math.abs(diff) > threshold) {
 		const activeTab = document.querySelector('.tab-btn.active');
-		const isCalendarActive = activeTab.textContent.includes('Calendar');
+		if (!activeTab) return;
 
-		if (diff > 0 && isCalendarActive) {
-			// Swipe left - go to todos
-			switchTab('todo');
-		} else if (diff < 0 && !isCalendarActive) {
-			// Swipe right - go to calendar
-			switchTab('calendar');
+		const activeTabText = activeTab.textContent.trim();
+
+		if (diff > 0) {
+			// Swipe left - next tab
+			if (activeTabText.includes('Calendar')) {
+				switchTab('my-tasks').catch(console.error);
+			} else if (activeTabText.includes('My Tasks')) {
+				switchTab('partner-tasks').catch(console.error);
+			} else if (activeTabText.includes('Partner')) {
+				switchTab('shared-tasks').catch(console.error);
+			}
+		} else {
+			// Swipe right - previous tab
+			if (activeTabText.includes('My Tasks')) {
+				switchTab('calendar').catch(console.error);
+			} else if (activeTabText.includes('Partner')) {
+				switchTab('my-tasks').catch(console.error);
+			} else if (activeTabText.includes('Shared')) {
+				switchTab('partner-tasks').catch(console.error);
+			}
 		}
 	}
 }
