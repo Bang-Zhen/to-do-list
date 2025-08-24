@@ -923,13 +923,36 @@ function generateCalendar(date) {
 			const currentDate = new Date(startDate);
 			let currentWeekSpan = null;
 			let lastWeekIndex = -1;
+			
+			// Calculate calendar layout info for correct positioning
+			const firstDay = new Date(year, month, 1).getDay();
 
 			while (currentDate <= endDate) {
 				const dateStr = currentDate.toISOString().split('T')[0];
 				const dayElement = grid.querySelector(`[data-date="${dateStr}"]`);
 
 				if (dayElement) {
-					const dayIndex = Array.from(grid.children).indexOf(dayElement) - 7; // Subtract header row
+					// Calculate correct dayIndex based on calendar layout, not DOM position
+					let dayIndex;
+					const eventDate = new Date(dateStr);
+					
+					if (eventDate.getFullYear() === year && eventDate.getMonth() === month) {
+						// Current month date
+						const dayOfMonth = eventDate.getDate();
+						dayIndex = firstDay + dayOfMonth - 1;
+					} else if (eventDate < new Date(year, month, 1)) {
+						// Previous month date
+						const prevMonthDate = new Date(year, month, 0);
+						const dayOfMonth = eventDate.getDate();
+						const daysInPrevMonth = prevMonthDate.getDate();
+						dayIndex = firstDay - (daysInPrevMonth - dayOfMonth + 1);
+					} else {
+						// Next month date
+						const dayOfMonth = eventDate.getDate();
+						const daysInCurrentMonth = new Date(year, month + 1, 0).getDate();
+						dayIndex = firstDay + daysInCurrentMonth + dayOfMonth - 1;
+					}
+					
 					const weekIndex = Math.floor(dayIndex / 7);
 					const dayInWeek = dayIndex % 7;
 
