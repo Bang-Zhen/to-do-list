@@ -2342,15 +2342,20 @@ function createTodoElement(todo) {
 
 	// Create the structure
 	div.innerHTML = `
-        <div class="todo-checkbox ${todo.completed ? 'checked' : ''}"></div>
-        <div class="todo-text ${todo.completed ? 'completed' : ''}">
-            <strong>${todo.title}</strong>
-            ${todo.notes ? `<div class="todo-meta">${todo.notes}</div>` : ''}
-            ${dueDateHtml}
-            ${attachmentHtml}
-        </div>
-        <button class="delete-todo-btn" type="button" data-todo-id="${todo.id}" title="Delete task">🗑️</button>
-    `;
+	      <div class="todo-checkbox ${todo.completed ? 'checked' : ''}"></div>
+	      <div class="todo-text ${todo.completed ? 'completed' : ''}">
+	          <strong>${todo.title}</strong>
+	          ${todo.notes ? `<div class="todo-meta">${todo.notes}</div>` : ''}
+	          ${dueDateHtml}
+	          ${attachmentHtml}
+	      </div>
+	      <button class="delete-todo-btn" type="button" data-todo-id="${todo.id}" title="Delete task">🗑️</button>
+	  `;
+
+	// Add completed class to the todo item itself
+	if (todo.completed) {
+	  div.classList.add('completed');
+	}
 
 	// Add event listeners after the HTML is set
 	const checkbox = div.querySelector('.todo-checkbox');
@@ -2406,58 +2411,64 @@ async function toggleTodo(todoId) {
 	const todo = todos.find((t) => t.id === todoId);
 	console.log('🎯 Found todo:', todo);
 
-	// Add visual feedback immediately
+	// Add immediate visual feedback
 	const todoElements = document.querySelectorAll(`[data-todo-id="${todoId}"]`);
 	console.log('📋 Todo elements found:', todoElements.length);
 
 	if (todoElements.length === 0) {
-		console.error('❌ No todo elements found with data-todo-id:', todoId);
-		return;
+	  console.error('❌ No todo elements found with data-todo-id:', todoId);
+	  return;
 	}
 
 	if (todo) {
-		console.log('✅ Todo found, updating completion status');
-		try {
-			const todoElements = document.querySelectorAll(
-				`[data-todo-id="${todoId}"]`,
-			);
-			console.log('📋 Todo elements found:', todoElements.length);
+	  console.log('✅ Todo found, updating completion status');
+	  try {
+	    const todoElements = document.querySelectorAll(
+	      `[data-todo-id="${todoId}"]`,
+	    );
+	    console.log('📋 Todo elements found:', todoElements.length);
 
-			// Animate completion
-			todoElements.forEach((element) => {
-				element.classList.add('completing');
-			});
+	    // Immediate visual feedback
+	    todoElements.forEach((element) => {
+	      const checkbox = element.querySelector('.todo-checkbox');
+	      const todoText = element.querySelector('.todo-text');
 
-			// Wait for animation
-			await new Promise((resolve) => setTimeout(resolve, 500));
+	      if (todo.completed) {
+	        // If completing a task
+	        element.classList.add('completing');
+	        element.classList.remove('completed');
+	        if (checkbox) checkbox.classList.remove('checked');
+	        if (todoText) todoText.classList.remove('completed');
+	      } else {
+	        // If marking as completed
+	        element.classList.add('completing');
+	        element.classList.add('completed');
+	        if (checkbox) checkbox.classList.add('checked');
+	        if (todoText) todoText.classList.add('completed');
+	      }
+	    });
 
-			// Update the todo
-			console.log('🔥 Updating todo in database...');
-			await updateDoc(doc(db, 'todos', todoId), {
-				completed: !todo.completed,
-				updatedAt: serverTimestamp(),
-			});
-			console.log('✅ Todo updated successfully in database');
+	    // Wait for animation
+	    await new Promise((resolve) => setTimeout(resolve, 300));
 
-			// If completing the todo, add delete button
-			if (!todo.completed) {
-				todoElements.forEach((element) => {
-					const todoText = element.querySelector('.todo-text');
-					if (todoText) {  // Add null check
-						const deleteBtn = document.createElement('button');
-						deleteBtn.className = 'delete-todo-btn';
-						deleteBtn.innerHTML = 'Delete';
-						deleteBtn.onclick = () => deleteTodo(todoId);
-						todoText.appendChild(deleteBtn);
-					} else {
-						console.error('❌ Could not find .todo-text element in todo item:', element);
-					}
-				});
-			}
+	    // Remove animation class and finalize state
+	    todoElements.forEach((element) => {
+	      element.classList.remove('completing');
+	    });
 
-			if (!todo.completed) {
-				showNotification('Task completed! 🎉', 'success');
-			}
+	    // Update the todo in database
+	    console.log('🔥 Updating todo in database...');
+	    await updateDoc(doc(db, 'todos', todoId), {
+	      completed: !todo.completed,
+	      updatedAt: serverTimestamp(),
+	    });
+	    console.log('✅ Todo updated successfully in database');
+
+	    if (!todo.completed) {
+	      showNotification('Task completed! 🎉', 'success');
+	    } else {
+	      showNotification('Task marked as pending', 'info');
+	    }
 		} catch (error) {
 			console.error('❌ Error updating todo:', error);
 			showNotification('Error updating task', 'error');
