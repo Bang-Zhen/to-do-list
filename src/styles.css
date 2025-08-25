@@ -1582,6 +1582,91 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 	overflow: hidden;
 }
 
+/* Enhanced Personal Event Button with Warm Aesthetic */
+.personal-event-btn,
+.day-events-actions .personal-event-btn,
+button.personal-event-btn,
+.day-events-actions button.personal-event-btn {
+	background: linear-gradient(135deg, #FFE5D9 0%, #FFBE9C 30%, #FFA06B 60%, #FF8C41 100%) !important;
+	background-image: linear-gradient(135deg, #FFE5D9 0%, #FFBE9C 30%, #FFA06B 60%, #FF8C41 100%) !important;
+	border: none !important;
+	color: #704214 !important;
+	padding: 12px 24px !important;
+	border-radius: 25px !important;
+	cursor: pointer !important;
+	transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+	font-weight: 600 !important;
+	font-size: 14px !important;
+	letter-spacing: 0.3px !important;
+	position: relative !important;
+	overflow: hidden !important;
+	box-shadow:
+		0 3px 12px rgba(255, 188, 156, 0.35),
+		0 1px 6px rgba(255, 140, 65, 0.25),
+		inset 0 1px 0 rgba(255, 255, 255, 0.3) !important;
+	text-shadow: 0 1px 1px rgba(255, 255, 255, 0.4) !important;
+	min-height: 44px !important;
+	display: flex !important;
+	align-items: center !important;
+	justify-content: center !important;
+	gap: 8px !important;
+	/* Override any default white backgrounds */
+	background-color: transparent !important;
+	outline: none !important;
+}
+
+.personal-event-btn::before {
+	content: '';
+	position: absolute;
+	top: 0;
+	left: -100%;
+	width: 100%;
+	height: 100%;
+	background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.15), transparent);
+	transition: left 0.5s ease;
+}
+
+.personal-event-btn:hover,
+.day-events-actions .personal-event-btn:hover {
+	transform: translateY(-2px) !important;
+	box-shadow:
+		0 6px 20px rgba(255, 188, 156, 0.45),
+		0 3px 10px rgba(255, 140, 65, 0.35),
+		inset 0 1px 0 rgba(255, 255, 255, 0.35) !important;
+	background: linear-gradient(135deg, #FFF0EB 0%, #FFC7AD 30%, #FFAB7B 60%, #FF9D5C 100%) !important;
+}
+
+.personal-event-btn:hover::before,
+.day-events-actions .personal-event-btn:hover::before {
+	left: 100%;
+}
+
+.personal-event-btn:active,
+.day-events-actions .personal-event-btn:active {
+	transform: translateY(0) !important;
+	box-shadow:
+		0 2px 8px rgba(255, 188, 156, 0.25),
+		0 1px 4px rgba(255, 140, 65, 0.15),
+		inset 0 1px 3px rgba(112, 66, 20, 0.1) !important;
+	background: linear-gradient(135deg, #FFD6C4 0%, #FFB38A 40%, #FF9967 100%) !important;
+}
+
+.personal-event-btn:focus,
+.day-events-actions .personal-event-btn:focus {
+	outline: none !important;
+	box-shadow:
+		0 3px 12px rgba(255, 188, 156, 0.3),
+		0 1px 6px rgba(255, 140, 65, 0.2),
+		0 0 0 3px rgba(255, 160, 107, 0.4) !important;
+}
+
+.personal-event-btn span {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	font-size: 14px;
+}
+
 .btn::before {
 	content: '';
 	position: absolute;
@@ -1638,6 +1723,36 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 /* Day Events Modal */
 .day-events-content {
 	max-width: 400px;
+}
+
+.day-events-content .personal-event-btn,
+.day-events-modal .personal-event-btn {
+	background: linear-gradient(135deg, #FFE5D9 0%, #FFBE9C 30%, #FFA06B 60%, #FF8C41 100%) !important;
+	background-image: linear-gradient(135deg, #FFE5D9 0%, #FFBE9C 30%, #FFA06B 60%, #FF8C41 100%) !important;
+	border: none !important;
+	color: #704214 !important;
+	padding: 12px 24px !important;
+	border-radius: 25px !important;
+	cursor: pointer !important;
+	transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+	font-weight: 600 !important;
+	font-size: 14px !important;
+	letter-spacing: 0.3px !important;
+	position: relative !important;
+	overflow: hidden !important;
+	box-shadow:
+		0 3px 12px rgba(255, 218, 185, 0.3),
+		0 1px 6px rgba(255, 140, 0, 0.2),
+		inset 0 1px 0 rgba(255, 255, 255, 0.2) !important;
+	text-shadow: 0 1px 1px rgba(255, 255, 255, 0.3) !important;
+	min-height: 44px !important;
+	display: flex !important;
+	align-items: center !important;
+	justify-content: center !important;
+	gap: 8px !important;
+	opacity: 1 !important;
+	visibility: visible !important;
+	z-index: 10 !important;
 }
 
 .day-events-container {
@@ -2099,6 +2214,25 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 /* Ensure consistent color for all themes */
 [data-theme] .content-area::before {
 	background: #ccc;
+}
+
+/* Enhanced Personal Event Button Theme Variations */
+[data-theme="ocean"] .personal-event-btn {
+	background: linear-gradient(135deg, #FFE5D9 0%, #FFBE9C 30%, #FFA06B 60%, #FF8C41 100%) !important;
+	background-image: linear-gradient(135deg, #FFE5D9 0%, #FFBE9C 30%, #FFA06B 60%, #FF8C41 100%) !important;
+	color: #704214 !important;
+	box-shadow:
+		0 3px 12px rgba(255, 188, 156, 0.35),
+		0 1px 6px rgba(255, 140, 65, 0.25),
+		inset 0 1px 0 rgba(255, 255, 255, 0.3) !important;
+}
+
+[data-theme="ocean"] .personal-event-btn:hover {
+	background: linear-gradient(135deg, #FFF0EB 0%, #FFC7AD 30%, #FFAB7B 60%, #FF9D5C 100%) !important;
+	box-shadow:
+		0 6px 20px rgba(255, 188, 156, 0.45),
+		0 3px 10px rgba(255, 140, 65, 0.35),
+		inset 0 1px 0 rgba(255, 255, 255, 0.35) !important;
 }
 
 /* Theme Variations */

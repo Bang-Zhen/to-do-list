@@ -199,7 +199,7 @@
                         <div class="month-year" id="monthYear">January 2024</div>
                         <button class="nav-btn" onclick="changeMonth(1)">›</button>
                     </div>
-                    <button class="add-event-btn" onclick="console.log('Add Event button clicked'); openEventModal();">+ Add Event</button>
+                    <button class="add-event-btn" onclick="console.log('Personal Event button clicked'); openEventModal();" data-tooltip="Add an event to your calendar">+ Add Event</button>
                 </div>
                 <div class="calendar-grid" id="calendarGrid">
                     <!-- Calendar will be generated here -->
@@ -286,7 +286,7 @@
         <div id="eventModal" class="modal">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h3 class="modal-title" id="event-modal-title">Add Event</h3>
+                    <h3 class="modal-title" id="event-modal-title">Personal Event</h3>
                     <button class="close-btn" onclick="closeModal('eventModal')">&times;</button>
                 </div>
                 <form id="eventForm">
@@ -440,8 +440,8 @@
                         <!-- Events will be populated here -->
                     </div>
                     <div class="day-events-actions">
-                        <button class="btn btn-primary" onclick="openEventModal(document.getElementById('day-events-modal').dataset.selectedDate)">
-                            <span>+ Add Event</span>
+                        <button class="personal-event-btn" style="background: linear-gradient(135deg, #FFE5D9 0%, #FFBE9C 30%, #FFA06B 60%, #FF8C41 100%) !important;" onclick="openEventModal(document.getElementById('day-events-modal').dataset.selectedDate)">
+                            <span>+ Personal Event</span>
                         </button>
                     </div>
                 </div>

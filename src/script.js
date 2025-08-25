@@ -1335,7 +1335,7 @@ function openEventModal(selectedDate = null, isNewEvent = false, isShared = true
         // Set modal settings
         const isMultiDay = document.getElementById('isMultiDay');
         if (isMultiDay) isMultiDay.checked = false;
-        if (modalTitle) modalTitle.textContent = '✨ Create New Memory ✨';
+        if (modalTitle) modalTitle.textContent = '✨ Create Personal Event ✨';
         
         // Open the event form modal
         openModal('eventModal');
@@ -1412,7 +1412,7 @@ function openEventModal(selectedDate = null, isNewEvent = false, isShared = true
             <div class="modal-footer">
                 <div class="button-group">
                     <button class="btn btn-secondary" onclick="openEventModal('${selectedDate}', true, false)">
-                        <span>Add Event</span>
+                        <span>Personal Event</span>
                         <span>📝</span>
                     </button>
                     <button class="btn btn-primary" onclick="openEventModal('${selectedDate}', true, true)">
@@ -1714,7 +1714,9 @@ function openNewEventModal(selectedDate) {
     // Set modal settings
     const isMultiDay = document.getElementById('isMultiDay');
     if (isMultiDay) isMultiDay.checked = false;
-    if (modalTitle) modalTitle.textContent = '✨ Create New Memory ✨';
+    if (modalTitle) {
+        modalTitle.textContent = isShared ? '✨ Create New Memory ✨' : '✨ Create Personal Event ✨';
+    }
     
     // Open modal and log final state
     openModal('eventModal');
@@ -1795,7 +1797,7 @@ function openDayEventsModal(selectedDate) {
             <div class="modal-footer">
                 <div class="button-group">
                     <button class="btn btn-secondary" onclick="openEventModal('${selectedDate}', true, false)">
-                        <span>Add Event</span>
+                        <span>Personal Event</span>
                         <span>📝</span>
                     </button>
                     <button class="btn btn-primary" onclick="openEventModal('${selectedDate}', true, true)">
