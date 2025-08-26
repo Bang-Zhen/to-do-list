@@ -68,6 +68,11 @@ $todos.subscribe((todos) => {
 		if (tabName !== 'calendar') {
 			console.log('🔄 Refreshing filtered todos for tab:', tabName);
 			renderFilteredTodos(tabName).catch(console.error);
+
+			// Update progress bars for all task tabs when todos change
+			updateProgress('my-tasks');
+			updateProgress('partner-tasks');
+			updateProgress('shared-tasks');
 		} else {
 			console.log('📅 Skipping calendar tab refresh');
 		}
@@ -1095,6 +1100,8 @@ async function switchTab(tab) {
 			}
 			console.log('🔄 Calling renderFilteredTodos for my-tasks');
 			await renderFilteredTodos('my-tasks');
+			// Update progress bar for My Tasks
+			updateProgress('my-tasks');
 			break;
 		case 'partner-tasks':
 			if (partnerTasksView) {
@@ -1103,6 +1110,8 @@ async function switchTab(tab) {
 			}
 			tabBtns[2].classList.add('active');
 			await renderFilteredTodos('partner-tasks');
+			// Update progress bar for Partner Tasks
+			updateProgress('partner-tasks');
 			break;
 		case 'shared-tasks':
 			if (sharedTasksView) {
@@ -1111,6 +1120,8 @@ async function switchTab(tab) {
 			}
 			tabBtns[3].classList.add('active');
 			await renderFilteredTodos('shared-tasks');
+			// Update progress bar for Shared Tasks
+			updateProgress('shared-tasks');
 			break;
 	}
 
@@ -2296,7 +2307,23 @@ document.getElementById('todoForm').addEventListener('submit', async (e) => {
 
 		showNotification('Task created! 🎉', 'success');
 		closeModal('todoModal');
-		updateProgress(); // Update progress bar
+
+		// Update progress bar for the active tab
+		const currentActiveTab = document.querySelector('.tab-btn.active');
+		if (currentActiveTab) {
+			const activeTabText = currentActiveTab.textContent.trim();
+			let tabName = 'my-tasks'; // default
+
+			if (activeTabText.includes('My Tasks')) {
+				tabName = 'my-tasks';
+			} else if (activeTabText.includes('Partner')) {
+				tabName = 'partner-tasks';
+			} else if (activeTabText.includes('Shared')) {
+				tabName = 'shared-tasks';
+			}
+
+			updateProgress(tabName);
+		}
 	} catch (error) {
 		console.error('Error saving todo:', error);
 		showNotification('Error saving task', 'error');
@@ -2306,21 +2333,58 @@ document.getElementById('todoForm').addEventListener('submit', async (e) => {
 });
 
 // Todo Functions
-function updateProgress() {
+function updateProgress(tab = null) {
 	const todos = $todos.get();
-	const totalTasks = todos.length;
-	const completedTasks = todos.filter((todo) => todo.completed).length;
-	const progressPercentage =
-		totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
+	const currentUser = $currentUser.get();
 
-	const progressFill = document.querySelector('.progress-fill');
-	const progressText = document.querySelector('.progress-text');
+	if (!currentUser) return;
+
+	let filteredTodos = [];
+	let progressBarId, progressTextId;
+
+	// Filter todos based on tab
+	switch (tab) {
+		case 'my-tasks':
+			filteredTodos = todos.filter(todo => todo.assignee === currentUser.uid);
+			progressBarId = 'my-tasks-progress-bar';
+			progressTextId = 'my-tasks-progress-text';
+			break;
+		case 'partner-tasks':
+			// Get partner ID
+			const partnerId = todos.find(todo => todo.assignee !== currentUser.uid && todo.assignee !== 'shared')?.assignee;
+			filteredTodos = todos.filter(todo => todo.assignee === partnerId);
+			progressBarId = 'partner-tasks-progress-bar';
+			progressTextId = 'partner-tasks-progress-text';
+			break;
+		case 'shared-tasks':
+			filteredTodos = todos.filter(todo => todo.assignee === 'shared');
+			progressBarId = 'shared-tasks-progress-bar';
+			progressTextId = 'shared-tasks-progress-text';
+			break;
+		default:
+			// Global progress for backward compatibility
+			filteredTodos = todos;
+			progressBarId = 'task-progress-bar';
+			progressTextId = 'progress-text';
+			break;
+	}
+
+	const totalTasks = filteredTodos.length;
+	const completedTasks = filteredTodos.filter((todo) => todo.completed).length;
+	const progressPercentage =
+		totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 100; // Show 100% when no tasks
+
+	const progressFill = document.getElementById(progressBarId)?.querySelector('.progress-fill');
+	const progressText = document.getElementById(progressTextId);
 
 	if (progressFill && progressText) {
 		// Animate the progress bar
 		progressFill.style.transition = 'width 0.6s ease-in-out';
 		progressFill.style.width = `${progressPercentage}%`;
-		progressText.textContent = `${progressPercentage}% Complete (${completedTasks}/${totalTasks} tasks)`;
+		const progressTextContent = totalTasks > 0
+			? `${progressPercentage}% Complete (${completedTasks}/${totalTasks} tasks)`
+			: `${progressPercentage}% Complete (no tasks)`;
+		progressText.textContent = progressTextContent;
 	}
 }
 
@@ -2328,24 +2392,21 @@ function renderTodos(todos) {
 	const currentUser = $currentUser.get();
 	console.log('Rendering todos for user:', currentUser?.uid);
 
-	// Update progress bar
-	updateProgress();
+	// Update progress bar for the active tab
+	const currentActiveTab = document.querySelector('.tab-btn.active');
+	if (currentActiveTab) {
+		const activeTabText = currentActiveTab.textContent.trim();
+		let tabName = 'my-tasks'; // default
 
-	// Calculate progress
-	const totalTasks = todos.length;
-	const completedTasks = todos.filter((todo) => todo.completed).length;
-	const progressPercentage =
-		totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
+		if (activeTabText.includes('My Tasks')) {
+			tabName = 'my-tasks';
+		} else if (activeTabText.includes('Partner')) {
+			tabName = 'partner-tasks';
+		} else if (activeTabText.includes('Shared')) {
+			tabName = 'shared-tasks';
+		}
 
-	// Update progress bar
-	const progressFill = document.querySelector('.progress-fill');
-	const progressText = document.querySelector('.progress-text');
-
-	if (progressFill) {
-		progressFill.style.width = `${progressPercentage}%`;
-	}
-	if (progressText) {
-		progressText.textContent = `${progressPercentage}% Complete (${completedTasks}/${totalTasks} tasks)`;
+		updateProgress(tabName);
 	}
 
 	// Note: Individual container rendering is now handled by renderFilteredTodos()
@@ -2542,7 +2603,22 @@ async function deleteTodo(todoId) {
 
 		// Update progress after a brief delay to ensure DOM is updated
 		setTimeout(() => {
-			updateProgress();
+			// Update progress bar for the active tab
+			const currentActiveTab = document.querySelector('.tab-btn.active');
+			if (currentActiveTab) {
+				const activeTabText = currentActiveTab.textContent.trim();
+				let tabName = 'my-tasks'; // default
+
+				if (activeTabText.includes('My Tasks')) {
+					tabName = 'my-tasks';
+				} else if (activeTabText.includes('Partner')) {
+					tabName = 'partner-tasks';
+				} else if (activeTabText.includes('Shared')) {
+					tabName = 'shared-tasks';
+				}
+
+				updateProgress(tabName);
+			}
 		}, 600);
 	} catch (error) {
 		console.error('Error deleting todo:', error);

@@ -173,14 +173,6 @@
             <span id="status-text">Connecting...</span>
         </div>
 
-        <!-- Progress Bar -->
-        <div class="progress-container">
-            <div id="task-progress-bar" class="progress-bar">
-                <div class="progress-fill"></div>
-            </div>
-            <div id="progress-text" class="progress-text">0% Complete</div>
-        </div>
-
         <!-- Tab Navigation -->
         <div class="tab-navigation">
             <button class="tab-btn active" onclick="switchTab('calendar')" data-tooltip="View and manage your calendar">📅 Calendar</button>
@@ -212,6 +204,13 @@
                     <h2 class="section-title">My Tasks</h2>
                     <button class="add-event-btn" onclick="openTodoModal('user1')">+ Add Task</button>
                 </div>
+                <!-- Progress Bar -->
+                <div class="progress-container">
+                    <div id="my-tasks-progress-bar" class="progress-bar">
+                        <div class="progress-fill"></div>
+                    </div>
+                    <div id="my-tasks-progress-text" class="progress-text">0% Complete</div>
+                </div>
                 <div class="todo-lists">
                     <div class="todo-list full-width">
                         <div id="user1-todos" class="todo-list-content">
@@ -227,6 +226,13 @@
                     <h2 class="section-title" id="partner-view-title">Partner's Tasks</h2>
                     <button class="add-event-btn" onclick="openTodoModal('user2')">+ Add Task</button>
                 </div>
+                <!-- Progress Bar -->
+                <div class="progress-container">
+                    <div id="partner-tasks-progress-bar" class="progress-bar">
+                        <div class="progress-fill"></div>
+                    </div>
+                    <div id="partner-tasks-progress-text" class="progress-text">0% Complete</div>
+                </div>
                 <div class="todo-lists">
                     <div class="todo-list full-width">
                         <div id="user2-todos" class="todo-list-content">
@@ -241,6 +247,13 @@
                 <div class="todo-header">
                     <h2 class="section-title">Shared Tasks</h2>
                     <button class="add-event-btn" onclick="openTodoModal('shared')">+ Add Shared Task</button>
+                </div>
+                <!-- Progress Bar -->
+                <div class="progress-container">
+                    <div id="shared-tasks-progress-bar" class="progress-bar">
+                        <div class="progress-fill"></div>
+                    </div>
+                    <div id="shared-tasks-progress-text" class="progress-text">0% Complete</div>
                 </div>
                 <div class="todo-lists">
                     <div class="todo-list full-width">
