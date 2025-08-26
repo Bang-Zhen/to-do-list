@@ -1024,7 +1024,7 @@ body {
 }
 
 .todo-lists {
-	padding: 30px;
+	padding: 15px;
 }
 
 /* Apply grid layout to task containers */
@@ -2539,7 +2539,7 @@ button.personal-event-btn,
 	}
 
 	.todo-lists {
-		padding: 15px;
+		padding: 12px;
 		gap: 15px;
 	}
 
