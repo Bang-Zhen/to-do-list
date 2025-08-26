@@ -1411,7 +1411,7 @@ function openEventModal(selectedDate = null, isNewEvent = false, isShared = true
             </div>
             <div class="modal-footer">
                 <div class="button-group">
-                    <button class="btn btn-secondary" onclick="openEventModal('${selectedDate}', true, false)">
+                    <button class="btn btn-secondary personal-event-btn" onclick="openEventModal('${selectedDate}', true, false)">
                         <span>Personal Event</span>
                         <span>📝</span>
                     </button>
@@ -1796,7 +1796,7 @@ function openDayEventsModal(selectedDate) {
             </div>
             <div class="modal-footer">
                 <div class="button-group">
-                    <button class="btn btn-secondary" onclick="openEventModal('${selectedDate}', true, false)">
+                    <button class="btn btn-secondary personal-event-btn" onclick="openEventModal('${selectedDate}', true, false)">
                         <span>Personal Event</span>
                         <span>📝</span>
                     </button>
