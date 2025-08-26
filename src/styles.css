@@ -407,6 +407,14 @@ body {
 	background: linear-gradient(135deg, #2d5a27 0%, #90a955 100%);
 }
 
+.theme-cosmic-horizon {
+	background: linear-gradient(135deg, #9600FF 0%, #AEBAF8 100%);
+}
+
+.theme-ocean-breeze {
+	background: linear-gradient(135deg, #07A3B2 0%, #D9ECC7 100%);
+}
+
 /* Connection Status */
 .connection-status {
 	background: var(--glass-bg);
@@ -2217,33 +2225,8 @@ button.personal-event-btn,
 }
 
 /* Enhanced Personal Event Button Theme Variations */
-[data-theme="ocean"] .personal-event-btn {
-	background: linear-gradient(135deg, #FFE5D9 0%, #FFBE9C 30%, #FFA06B 60%, #FF8C41 100%) !important;
-	background-image: linear-gradient(135deg, #FFE5D9 0%, #FFBE9C 30%, #FFA06B 60%, #FF8C41 100%) !important;
-	color: #704214 !important;
-	box-shadow:
-		0 3px 12px rgba(255, 188, 156, 0.35),
-		0 1px 6px rgba(255, 140, 65, 0.25),
-		inset 0 1px 0 rgba(255, 255, 255, 0.3) !important;
-}
-
-[data-theme="ocean"] .personal-event-btn:hover {
-	background: linear-gradient(135deg, #FFF0EB 0%, #FFC7AD 30%, #FFAB7B 60%, #FF9D5C 100%) !important;
-	box-shadow:
-		0 6px 20px rgba(255, 188, 156, 0.45),
-		0 3px 10px rgba(255, 140, 65, 0.35),
-		inset 0 1px 0 rgba(255, 255, 255, 0.35) !important;
-}
 
 /* Theme Variations */
-[data-theme="ocean"] {
-	--primary-gradient: linear-gradient(135deg, #2193b0, #6dd5ed);
-	--secondary-gradient: linear-gradient(45deg, #6dd5ed, #2193b0);
-	--progress-fill: linear-gradient(90deg, #2193b0, #6dd5ed);
-	--text-primary: #1a365d;
-	--text-secondary: #2c5282;
-	--checkmark-color: #6dd5ed;
-}
 
 /* Todo Item Delete Button Styles */
 .todo-text {
@@ -2382,6 +2365,24 @@ button.personal-event-btn,
 	--text-primary: #ffffff;
 	--text-secondary: rgba(255, 255, 255, 0.9);
 	--checkmark-color: #ec4899;
+}
+
+[data-theme="cosmic-horizon"] {
+	--primary-gradient: linear-gradient(135deg, #9600FF 0%, #AEBAF8 100%);
+	--secondary-gradient: linear-gradient(45deg, #AEBAF8, #9600FF);
+	--progress-fill: linear-gradient(90deg, #9600FF, #AEBAF8);
+	--text-primary: #1a1a2e;
+	--text-secondary: #4a5568;
+	--checkmark-color: #AEBAF8;
+}
+
+[data-theme="ocean-breeze"] {
+	--primary-gradient: linear-gradient(135deg, #07A3B2 0%, #D9ECC7 100%);
+	--secondary-gradient: linear-gradient(45deg, #D9ECC7, #07A3B2);
+	--progress-fill: linear-gradient(90deg, #07A3B2, #D9ECC7);
+	--text-primary: #1a365d;
+	--text-secondary: #2c5282;
+	--checkmark-color: #07A3B2;
 }
 
 /* Responsive Design */
