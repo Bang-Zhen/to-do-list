@@ -1308,15 +1308,14 @@ function openEventModal(selectedDate = null, isNewEvent = false, isShared = true
         const eventTime = document.getElementById('eventTime');
         const eventLocation = document.getElementById('eventLocation');
         const eventNotes = document.getElementById('eventNotes');
-        const eventShared = document.getElementById('eventShared');
         const modalTitle = document.getElementById('event-modal-title');
+        const eventModal = document.getElementById('eventModal');
 
         // Clear form fields
         if (eventTitle) eventTitle.value = '';
         if (eventTime) eventTime.value = '';
         if (eventLocation) eventLocation.value = '';
         if (eventNotes) eventNotes.value = '';
-        if (eventShared) eventShared.checked = isShared;
 
         // Format and set dates if provided
         if (selectedDate) {
@@ -1332,11 +1331,19 @@ function openEventModal(selectedDate = null, isNewEvent = false, isShared = true
             if (eventEndDate) eventEndDate.value = formattedDate;
         }
 
-        // Set modal settings
+        // Set modal settings and data attribute for shared status
         const isMultiDay = document.getElementById('isMultiDay');
         if (isMultiDay) isMultiDay.checked = false;
-        if (modalTitle) modalTitle.textContent = '✨ Create Personal Event ✨';
-        
+
+        // Set data attribute to track event type and update title
+        if (eventModal) {
+            eventModal.setAttribute('data-event-type', isShared ? 'memory' : 'personal');
+        }
+
+        if (modalTitle) {
+            modalTitle.textContent = isShared ? '✨ Create New Memory ✨' : '✨ Create Personal Event ✨';
+        }
+
         // Open the event form modal
         openModal('eventModal');
         closeModal('daily-events-modal');
@@ -1663,9 +1670,9 @@ function openEventModal(selectedDate = null, isNewEvent = false, isShared = true
     setTimeout(() => modal.classList.add('active'), 10);
 }
 
-function openNewEventModal(selectedDate) {
+function openNewEventModal(selectedDate, isShared = true) {
     closeModal('daily-events-modal');
-    
+
     // Set up new event form and validate elements exist
     const eventStartDate = document.getElementById('eventStartDate');
     const eventEndDate = document.getElementById('eventEndDate');
@@ -1673,8 +1680,8 @@ function openNewEventModal(selectedDate) {
     const eventTime = document.getElementById('eventTime');
     const eventLocation = document.getElementById('eventLocation');
     const eventNotes = document.getElementById('eventNotes');
-    const eventShared = document.getElementById('eventShared');
     const modalTitle = document.getElementById('event-modal-title');
+    const eventModal = document.getElementById('eventModal');
 
     // Log form elements for debugging
     console.log('Form elements found:', {
@@ -1683,8 +1690,7 @@ function openNewEventModal(selectedDate) {
         eventTitle: !!eventTitle,
         eventTime: !!eventTime,
         eventLocation: !!eventLocation,
-        eventNotes: !!eventNotes,
-        eventShared: !!eventShared
+        eventNotes: !!eventNotes
     });
 
     // Clear and set up form fields
@@ -1692,7 +1698,6 @@ function openNewEventModal(selectedDate) {
     if (eventTime) eventTime.value = '';
     if (eventLocation) eventLocation.value = '';
     if (eventNotes) eventNotes.value = '';
-    if (eventShared) eventShared.checked = true;
 
     // Format and set dates if provided
     if (selectedDate) {
@@ -1711,19 +1716,26 @@ function openNewEventModal(selectedDate) {
         if (eventEndDate) eventEndDate.value = formattedDate;
     }
 
-    // Set modal settings
+    // Set modal settings and data attribute
     const isMultiDay = document.getElementById('isMultiDay');
     if (isMultiDay) isMultiDay.checked = false;
+
+    // Set data attribute for event type
+    if (eventModal) {
+        eventModal.setAttribute('data-event-type', isShared ? 'memory' : 'personal');
+    }
+
     if (modalTitle) {
         modalTitle.textContent = isShared ? '✨ Create New Memory ✨' : '✨ Create Personal Event ✨';
     }
-    
+
     // Open modal and log final state
     openModal('eventModal');
     console.log('Final form values:', {
         startDate: eventStartDate?.value,
         endDate: eventEndDate?.value,
-        title: eventTitle?.value
+        title: eventTitle?.value,
+        eventType: eventModal?.getAttribute('data-event-type')
     });
 }
 
@@ -2080,8 +2092,18 @@ function openEventDetails(eventId) {
 		document.getElementById('eventTime').value = event.time || '';
 		document.getElementById('eventLocation').value = event.location || '';
 		document.getElementById('eventNotes').value = event.notes || '';
-		document.getElementById('eventShared').checked = event.shared;
-		document.getElementById('event-modal-title').textContent = '✨ Edit Memory ✨';
+
+		// Set data attribute and modal title based on shared status
+		const eventModal = document.getElementById('eventModal');
+		const modalTitle = document.getElementById('event-modal-title');
+
+		if (eventModal) {
+			eventModal.setAttribute('data-event-type', event.shared ? 'memory' : 'personal');
+		}
+
+		if (modalTitle) {
+			modalTitle.textContent = event.shared ? '✨ Edit Memory ✨' : '✨ Edit Personal Event ✨';
+		}
 
 		// Store event ID for updating
 		document.getElementById('eventForm').dataset.editingId = eventId;
@@ -2135,6 +2157,11 @@ document.getElementById('eventForm').addEventListener('submit', async (e) => {
             return;
         }
 
+		// Determine shared status based on modal data attribute
+		const eventModal = document.getElementById('eventModal');
+		const eventType = eventModal ? eventModal.getAttribute('data-event-type') : 'memory';
+		const isShared = eventType === 'memory'; // Memory events are shared, personal events are not
+
 		const eventData = {
 			title: document.getElementById('eventTitle').value,
 			startDate: startDate,
@@ -2142,7 +2169,7 @@ document.getElementById('eventForm').addEventListener('submit', async (e) => {
 			time: document.getElementById('eventTime').value,
 			location: document.getElementById('eventLocation').value,
 			notes: document.getElementById('eventNotes').value,
-			shared: document.getElementById('eventShared').checked,
+			shared: isShared,
 			workspaceId: currentWorkspace,
 			createdBy: currentUser.uid,
 			createdAt: serverTimestamp(),
