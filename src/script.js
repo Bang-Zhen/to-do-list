@@ -3313,8 +3313,11 @@ document
 			await updateDoc(doc(db, 'users', currentUser.uid), profileData);
 
 			// Update displayed name and avatar
-			document.getElementById('user-name').textContent =
-				profileData.displayName || currentUser.displayName || '';
+			const userAvatar = document.getElementById('current-user-avatar');
+			if (userAvatar) {
+				const displayName = profileData.displayName || currentUser.displayName || 'U';
+				userAvatar.textContent = displayName.charAt(0).toUpperCase();
+			}
 			closeModal('settingsModal');
 			showNotification('Profile updated successfully! 👤', 'success');
 			updateUserAvatar();
