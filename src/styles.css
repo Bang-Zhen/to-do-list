@@ -654,10 +654,14 @@ body {
 	border: 1px solid var(--glass-border);
 	min-height: 700px;
 	padding: 20px;
-	overflow: hidden;
+	overflow-x: auto;
+	overflow-y: hidden;
 	position: relative;
 	max-width: 1400px;
 	margin: 0 auto;
+	/* Ensure horizontal scrollbar is visible on mobile */
+	scrollbar-width: thin;
+	scrollbar-color: rgba(255, 255, 255, 0.3) transparent;
 }
 
 .content-area::before {
@@ -716,6 +720,18 @@ body {
 	display: flex;
 	align-items: center;
 	justify-content: center;
+	flex-shrink: 0;
+	/* Ensure perfect circular shape across all devices */
+	min-width: 40px;
+	min-height: 40px;
+	max-width: 40px;
+	max-height: 40px;
+	aspect-ratio: 1;
+	box-sizing: border-box;
+	/* Prevent distortion on zoom or viewport changes */
+	transform: translateZ(0);
+	backface-visibility: hidden;
+	-webkit-backface-visibility: hidden;
 }
 
 .nav-btn:hover {
@@ -749,7 +765,7 @@ body {
 
 .calendar-grid {
 	display: grid;
-	grid-template-columns: repeat(7, 1fr);
+	grid-template-columns: repeat(7, minmax(45px, 1fr));
 	gap: 1px;
 	background: rgba(255, 255, 255, 0.1);
 	border-radius: 15px;
@@ -758,6 +774,7 @@ body {
 	contain: none; /* Allow events to flow outside when needed */
 	max-width: 100%;
 	margin: 0 auto;
+	min-width: 320px; /* Minimum width to prevent excessive compression */
 }
 
 .day-header {
@@ -766,6 +783,11 @@ body {
 	padding: 15px;
 	text-align: center;
 	font-weight: 600;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	min-height: 45px;
+	box-sizing: border-box;
 }
 
 .calendar-day {
@@ -2471,6 +2493,16 @@ button.personal-event-btn,
 	.calendar-nav {
 		gap: 8px;
 		justify-content: center;
+		flex-wrap: nowrap;
+	}
+
+	.nav-btn {
+		flex-shrink: 0;
+		min-width: 42px;
+		min-height: 42px;
+		max-width: 42px;
+		max-height: 42px;
+		aspect-ratio: 1;
 	}
 
 	.month-year {
@@ -2482,8 +2514,40 @@ button.personal-event-btn,
 	.calendar-grid {
 		gap: 1px;
 		border-radius: 12px;
-		/* Ensure proper grid layout on mobile */
-		grid-template-columns: repeat(7, 1fr);
+		/* Ensure proper grid layout on mobile with minimum column widths */
+		grid-template-columns: repeat(7, minmax(40px, 1fr));
+	}
+
+	/* Additional optimization for very narrow screens */
+	@media (max-width: 360px) {
+		.calendar-grid {
+			grid-template-columns: repeat(7, minmax(35px, 1fr));
+			min-width: 280px;
+		}
+
+		.calendar-day {
+			min-height: 45px;
+			padding: 2px;
+		}
+
+		.day-header {
+			font-size: 10px;
+			padding: 6px;
+			min-height: 30px;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+		}
+
+		.day-number {
+			font-size: 10px;
+		}
+
+		.event-pill {
+			font-size: 5px;
+			padding: 1px 2px;
+			min-height: 14px;
+		}
 	}
 
 	.calendar-day {
@@ -2820,6 +2884,16 @@ button.personal-event-btn,
 	.calendar-nav {
 		justify-content: space-between;
 		width: 100%;
+		flex-wrap: nowrap;
+	}
+
+	.nav-btn {
+		min-width: 38px;
+		min-height: 38px;
+		max-width: 38px;
+		max-height: 38px;
+		aspect-ratio: 1;
+		flex-shrink: 0;
 	}
 
 	.month-year {
@@ -2835,6 +2909,15 @@ button.personal-event-btn,
 		display: flex;
 		flex-direction: column;
 		justify-content: flex-start;
+	}
+
+	.day-header {
+		font-size: 11px;
+		padding: 8px;
+		min-height: 35px;
+		display: flex;
+		align-items: center;
+		justify-content: center;
 	}
 
 	.calendar-day-number {
