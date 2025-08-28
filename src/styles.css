@@ -22,7 +22,7 @@
 	--progress-fill: linear-gradient(90deg, #667eea, #764ba2);
 	--checkmark-color: #ff6b6b;
 	/* Darker background for individual task items to create better contrast */
-	--task-item-bg: rgba(0, 0, 0, 0.15);
+	--task-item-bg: rgba(0, 0, 0, 0.2);
 
 	/* Standardized font variables for consistency */
 	--font-family-primary: "Outfit", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
@@ -48,12 +48,58 @@
 	);
 	--secondary-gradient: linear-gradient(45deg, #ff6b6b, #ff8e53);
 	--checkmark-color: #ff8e53;
+	--task-item-bg: rgba(255, 142, 83, 0.2);
+}
+
+[data-theme="sunset"] .todo-item {
+	border-color: rgba(255, 142, 83, 0.3);
+	box-shadow: 0 2px 8px rgba(255, 142, 83, 0.1);
+}
+
+[data-theme="sunset"] .todo-item:hover {
+	background: rgba(255, 142, 83, 0.3);
+	box-shadow: 0 4px 12px rgba(255, 142, 83, 0.2);
+	border-color: rgba(255, 142, 83, 0.4);
 }
 
 [data-theme="forest"] {
 	--primary-gradient: linear-gradient(135deg, #2d5a27 0%, #90a955 100%);
 	--secondary-gradient: linear-gradient(45deg, #52b788, #40916c);
 	--checkmark-color: #52b788;
+	--task-item-bg: rgba(144, 169, 85, 0.2);
+}
+
+[data-theme="forest"] .todo-item {
+	border-color: rgba(144, 169, 85, 0.3);
+	box-shadow: 0 2px 8px rgba(144, 169, 85, 0.1);
+}
+
+[data-theme="forest"] .todo-item:hover {
+	background: rgba(144, 169, 85, 0.3);
+	box-shadow: 0 4px 12px rgba(144, 169, 85, 0.2);
+	border-color: rgba(144, 169, 85, 0.4);
+}
+
+[data-theme="lavender"] .todo-item {
+	border-color: rgba(151, 149, 239, 0.3);
+	box-shadow: 0 2px 8px rgba(151, 149, 239, 0.1);
+}
+
+[data-theme="lavender"] .todo-item:hover {
+	background: rgba(151, 149, 239, 0.3);
+	box-shadow: 0 4px 12px rgba(151, 149, 239, 0.2);
+	border-color: rgba(151, 149, 239, 0.4);
+}
+
+[data-theme="midnight"] .todo-item {
+	border-color: rgba(255, 255, 255, 0.2);
+	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+[data-theme="midnight"] .todo-item:hover {
+	background: rgba(32, 58, 67, 0.4);
+	box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+	border-color: rgba(255, 255, 255, 0.3);
 }
 
 body {
@@ -1119,11 +1165,15 @@ body {
 	gap: 10px;
 	transition: all 0.3s ease;
 	position: relative;
+	border: 1px solid rgba(255, 255, 255, 0.1);
+	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 .todo-item:hover {
-	background: rgba(255, 255, 255, 0.15);
+	background: rgba(255, 255, 255, 0.2);
 	transform: translateX(5px);
+	box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+	border-color: rgba(255, 255, 255, 0.2);
 }
 
 .todo-item.loading {
@@ -1138,7 +1188,7 @@ body {
 .todo-checkbox {
 	width: 20px;
 	height: 20px;
-	border: 2px solid rgba(255, 255, 255, 0.5);
+	border: 2px solid rgba(255, 255, 255, 0.6);
 	border-radius: 5px;
 	cursor: pointer;
 	transition: all 0.3s ease;
@@ -1146,6 +1196,14 @@ body {
 	margin-top: 2px;
 	position: relative;
 	overflow: hidden;
+	background: rgba(255, 255, 255, 0.05);
+	box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.todo-checkbox:hover {
+	border-color: rgba(255, 255, 255, 0.9);
+	background: rgba(255, 255, 255, 0.15);
+	box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
 }
 
 .todo-checkbox.checked {
@@ -2380,6 +2438,7 @@ button.personal-event-btn,
 	--text-primary: #4a3b8a;
 	--text-secondary: #6b5b95;
 	--checkmark-color: #f9c5d1;
+	--task-item-bg: rgba(151, 149, 239, 0.15);
 }
 
 [data-theme="midnight"] {
@@ -2389,6 +2448,7 @@ button.personal-event-btn,
 	--text-primary: #ffffff;
 	--text-secondary: rgba(255, 255, 255, 0.7);
 	--checkmark-color: #203a43;
+	--task-item-bg: rgba(32, 58, 67, 0.25);
 }
 
 [data-theme="aurora"] {
@@ -2398,6 +2458,7 @@ button.personal-event-btn,
 	--text-primary: #0d4a2a;
 	--text-secondary: #1a5f37;
 	--checkmark-color: #01baef;
+	--task-item-bg: rgba(32, 191, 85, 0.25);
 }
 
 [data-theme="desert"] {
@@ -2407,6 +2468,7 @@ button.personal-event-btn,
 	--text-primary: #8b4513;
 	--text-secondary: #a05a2c;
 	--checkmark-color: #f68080;
+	--task-item-bg: rgba(249, 177, 110, 0.25);
 }
 
 [data-theme="cosmic"] {
@@ -2416,6 +2478,18 @@ button.personal-event-btn,
 	--text-primary: #ffffff;
 	--text-secondary: rgba(255, 255, 255, 0.9);
 	--checkmark-color: #ec4899;
+	--task-item-bg: rgba(124, 58, 237, 0.3);
+}
+
+[data-theme="cosmic"] .todo-item {
+	border-color: rgba(255, 255, 255, 0.15);
+	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+[data-theme="cosmic"] .todo-item:hover {
+	background: rgba(124, 58, 237, 0.4);
+	box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+	border-color: rgba(255, 255, 255, 0.25);
 }
 
 [data-theme="cosmic-horizon"] {
@@ -2425,6 +2499,7 @@ button.personal-event-btn,
 	--text-primary: #1a1a2e;
 	--text-secondary: #4a5568;
 	--checkmark-color: #AEBAF8;
+	--task-item-bg: rgba(150, 0, 255, 0.25);
 }
 
 [data-theme="ocean-breeze"] {
@@ -2434,6 +2509,318 @@ button.personal-event-btn,
 	--text-primary: #1a365d;
 	--text-secondary: #2c5282;
 	--checkmark-color: #07A3B2;
+	--task-item-bg: rgba(7, 163, 178, 0.25);
+}
+
+[data-theme="ocean-breeze"] .todo-item {
+	border-color: rgba(7, 163, 178, 0.3);
+	box-shadow: 0 2px 8px rgba(7, 163, 178, 0.1);
+}
+
+[data-theme="ocean-breeze"] .todo-item:hover {
+	background: rgba(7, 163, 178, 0.35);
+	box-shadow: 0 4px 12px rgba(7, 163, 178, 0.2);
+	border-color: rgba(7, 163, 178, 0.4);
+}
+
+[data-theme="aurora"] .todo-item {
+	border-color: rgba(32, 191, 85, 0.3);
+	box-shadow: 0 2px 8px rgba(32, 191, 85, 0.1);
+}
+
+[data-theme="aurora"] .todo-item:hover {
+	background: rgba(32, 191, 85, 0.35);
+	box-shadow: 0 4px 12px rgba(32, 191, 85, 0.2);
+	border-color: rgba(32, 191, 85, 0.4);
+}
+
+[data-theme="desert"] .todo-item {
+	border-color: rgba(249, 177, 110, 0.3);
+	box-shadow: 0 2px 8px rgba(249, 177, 110, 0.1);
+}
+
+[data-theme="desert"] .todo-item:hover {
+	background: rgba(249, 177, 110, 0.35);
+	box-shadow: 0 4px 12px rgba(249, 177, 110, 0.2);
+	border-color: rgba(249, 177, 110, 0.4);
+}
+
+[data-theme="cosmic-horizon"] .todo-item {
+	border-color: rgba(150, 0, 255, 0.3);
+	box-shadow: 0 2px 8px rgba(150, 0, 255, 0.1);
+}
+
+[data-theme="cosmic-horizon"] .todo-item:hover {
+	background: rgba(150, 0, 255, 0.35);
+	box-shadow: 0 4px 12px rgba(150, 0, 255, 0.2);
+	border-color: rgba(150, 0, 255, 0.4);
+}
+
+/* Enhanced text color adjustments for optimal readability */
+[data-theme="aurora"] .todo-text {
+	color: #0f3d2a;
+}
+
+[data-theme="aurora"] .todo-text.completed {
+	color: rgba(15, 61, 42, 0.6);
+}
+
+[data-theme="desert"] .todo-text {
+	color: #5d2a0c;
+}
+
+[data-theme="desert"] .todo-text.completed {
+	color: rgba(93, 42, 12, 0.6);
+}
+
+[data-theme="ocean-breeze"] .todo-text {
+	color: #0c2d4a;
+}
+
+[data-theme="ocean-breeze"] .todo-text.completed {
+	color: rgba(12, 45, 74, 0.6);
+}
+
+/* Enhanced text colors for dark themes */
+[data-theme="cosmic"] .todo-text {
+	color: #f8f9ff;
+}
+
+[data-theme="cosmic"] .todo-text.completed {
+	color: rgba(248, 249, 255, 0.6);
+}
+
+[data-theme="midnight"] .todo-text {
+	color: #f8f9fa;
+}
+
+[data-theme="midnight"] .todo-text.completed {
+	color: rgba(248, 249, 250, 0.6);
+}
+
+[data-theme="cosmic-horizon"] .todo-text {
+	color: #e6e7ff;
+}
+
+[data-theme="cosmic-horizon"] .todo-text.completed {
+	color: rgba(230, 231, 255, 0.6);
+}
+
+/* Enhanced border colors for optimal contrast */
+[data-theme="aurora"] .todo-item {
+	border-color: rgba(32, 191, 85, 0.4);
+	box-shadow: 0 2px 8px rgba(32, 191, 85, 0.15);
+}
+
+[data-theme="desert"] .todo-item {
+	border-color: rgba(249, 177, 110, 0.4);
+	box-shadow: 0 2px 8px rgba(249, 177, 110, 0.15);
+}
+
+[data-theme="ocean-breeze"] .todo-item {
+	border-color: rgba(7, 163, 178, 0.4);
+	box-shadow: 0 2px 8px rgba(7, 163, 178, 0.15);
+}
+
+[data-theme="cosmic"] .todo-item {
+	border-color: rgba(255, 255, 255, 0.25);
+	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+}
+
+[data-theme="midnight"] .todo-item {
+	border-color: rgba(255, 255, 255, 0.3);
+	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+}
+
+[data-theme="cosmic-horizon"] .todo-item {
+	border-color: rgba(174, 186, 248, 0.4);
+	box-shadow: 0 2px 8px rgba(150, 0, 255, 0.2);
+}
+
+/* Enhanced checkbox colors for optimal visibility */
+[data-theme="aurora"] .todo-checkbox {
+	border-color: rgba(32, 191, 85, 0.7);
+	background: rgba(32, 191, 85, 0.1);
+}
+
+[data-theme="aurora"] .todo-checkbox:hover {
+	border-color: rgba(32, 191, 85, 0.9);
+	background: rgba(32, 191, 85, 0.2);
+}
+
+[data-theme="desert"] .todo-checkbox {
+	border-color: rgba(249, 177, 110, 0.7);
+	background: rgba(249, 177, 110, 0.1);
+}
+
+[data-theme="desert"] .todo-checkbox:hover {
+	border-color: rgba(249, 177, 110, 0.9);
+	background: rgba(249, 177, 110, 0.2);
+}
+
+[data-theme="ocean-breeze"] .todo-checkbox {
+	border-color: rgba(7, 163, 178, 0.7);
+	background: rgba(7, 163, 178, 0.1);
+}
+
+[data-theme="ocean-breeze"] .todo-checkbox:hover {
+	border-color: rgba(7, 163, 178, 0.9);
+	background: rgba(7, 163, 178, 0.2);
+}
+
+[data-theme="cosmic"] .todo-checkbox {
+	border-color: rgba(255, 255, 255, 0.8);
+	background: rgba(255, 255, 255, 0.1);
+}
+
+[data-theme="cosmic"] .todo-checkbox:hover {
+	border-color: rgba(255, 255, 255, 1);
+	background: rgba(255, 255, 255, 0.2);
+}
+
+[data-theme="midnight"] .todo-checkbox {
+	border-color: rgba(255, 255, 255, 0.8);
+	background: rgba(255, 255, 255, 0.1);
+}
+
+[data-theme="midnight"] .todo-checkbox:hover {
+	border-color: rgba(255, 255, 255, 1);
+	background: rgba(255, 255, 255, 0.2);
+}
+
+[data-theme="cosmic-horizon"] .todo-checkbox {
+	border-color: rgba(174, 186, 248, 0.8);
+	background: rgba(174, 186, 248, 0.1);
+}
+
+[data-theme="cosmic-horizon"] .todo-checkbox:hover {
+	border-color: rgba(174, 186, 248, 1);
+	background: rgba(174, 186, 248, 0.2);
+}
+
+/* Enhanced delete button colors for better visibility */
+[data-theme="aurora"] .delete-todo-btn {
+	color: rgba(220, 38, 38, 0.7);
+}
+
+[data-theme="aurora"] .delete-todo-btn:hover {
+	color: #dc2626;
+	background: rgba(220, 38, 38, 0.1);
+}
+
+[data-theme="desert"] .delete-todo-btn {
+	color: rgba(220, 38, 38, 0.7);
+}
+
+[data-theme="desert"] .delete-todo-btn:hover {
+	color: #dc2626;
+	background: rgba(220, 38, 38, 0.1);
+}
+
+[data-theme="ocean-breeze"] .delete-todo-btn {
+	color: rgba(220, 38, 38, 0.7);
+}
+
+[data-theme="ocean-breeze"] .delete-todo-btn:hover {
+	color: #dc2626;
+	background: rgba(220, 38, 38, 0.1);
+}
+
+[data-theme="cosmic"] .delete-todo-btn {
+	color: rgba(252, 165, 165, 0.8);
+}
+
+[data-theme="cosmic"] .delete-todo-btn:hover {
+	color: #fca5a5;
+	background: rgba(252, 165, 165, 0.1);
+}
+
+[data-theme="midnight"] .delete-todo-btn {
+	color: rgba(252, 165, 165, 0.8);
+}
+
+[data-theme="midnight"] .delete-todo-btn:hover {
+	color: #fca5a5;
+	background: rgba(252, 165, 165, 0.1);
+}
+
+[data-theme="cosmic-horizon"] .delete-todo-btn {
+	color: rgba(252, 165, 165, 0.8);
+}
+
+[data-theme="cosmic-horizon"] .delete-todo-btn:hover {
+	color: #fca5a5;
+	background: rgba(252, 165, 165, 0.1);
+}
+
+/* Complete theme enhancements for remaining themes */
+[data-theme="sunset"] .todo-text {
+	color: #7f1d1d;
+}
+
+[data-theme="sunset"] .todo-text.completed {
+	color: rgba(127, 29, 29, 0.6);
+}
+
+[data-theme="sunset"] .todo-item {
+	border-color: rgba(255, 142, 83, 0.4);
+	box-shadow: 0 2px 8px rgba(255, 142, 83, 0.15);
+}
+
+[data-theme="sunset"] .todo-checkbox {
+	border-color: rgba(255, 142, 83, 0.7);
+	background: rgba(255, 142, 83, 0.1);
+}
+
+[data-theme="sunset"] .todo-checkbox:hover {
+	border-color: rgba(255, 142, 83, 0.9);
+	background: rgba(255, 142, 83, 0.2);
+}
+
+[data-theme="forest"] .todo-text {
+	color: #1b4332;
+}
+
+[data-theme="forest"] .todo-text.completed {
+	color: rgba(27, 67, 50, 0.6);
+}
+
+[data-theme="forest"] .todo-item {
+	border-color: rgba(144, 169, 85, 0.4);
+	box-shadow: 0 2px 8px rgba(144, 169, 85, 0.15);
+}
+
+[data-theme="forest"] .todo-checkbox {
+	border-color: rgba(144, 169, 85, 0.7);
+	background: rgba(144, 169, 85, 0.1);
+}
+
+[data-theme="forest"] .todo-checkbox:hover {
+	border-color: rgba(144, 169, 85, 0.9);
+	background: rgba(144, 169, 85, 0.2);
+}
+
+[data-theme="lavender"] .todo-text {
+	color: #4c1d95;
+}
+
+[data-theme="lavender"] .todo-text.completed {
+	color: rgba(76, 29, 149, 0.6);
+}
+
+[data-theme="lavender"] .todo-item {
+	border-color: rgba(151, 149, 239, 0.4);
+	box-shadow: 0 2px 8px rgba(151, 149, 239, 0.15);
+}
+
+[data-theme="lavender"] .todo-checkbox {
+	border-color: rgba(151, 149, 239, 0.7);
+	background: rgba(151, 149, 239, 0.1);
+}
+
+[data-theme="lavender"] .todo-checkbox:hover {
+	border-color: rgba(151, 149, 239, 0.9);
+	background: rgba(151, 149, 239, 0.2);
 }
 
 /* Responsive Design */

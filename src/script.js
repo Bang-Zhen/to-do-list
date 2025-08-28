@@ -2143,8 +2143,7 @@ document.getElementById('eventForm').addEventListener('submit', async (e) => {
         endDate: document.getElementById('eventEndDate').value,
         time: document.getElementById('eventTime').value,
         location: document.getElementById('eventLocation').value,
-        notes: document.getElementById('eventNotes').value,
-        shared: document.getElementById('eventShared').checked
+        notes: document.getElementById('eventNotes').value
     });
 
     try {
