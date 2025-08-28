@@ -518,6 +518,9 @@ body {
 	align-items: center;
 	justify-content: center;
 	font-size: 18px;
+	aspect-ratio: 1;
+	flex-shrink: 0;
+	box-sizing: border-box;
 }
 
 .header-btn:hover {
@@ -2187,6 +2190,9 @@ button.personal-event-btn,
 	justify-content: center;
 	color: white;
 	font-weight: 600;
+	aspect-ratio: 1;
+	flex-shrink: 0;
+	box-sizing: border-box;
 }
 
 .member-details h4 {
@@ -2240,13 +2246,33 @@ button.personal-event-btn,
 }
 
 /* Enhanced border styles for better visibility */
-.content-area {
-	border-top: 1px solid #ccc;
+/* Removed border-top to eliminate white line above calendar container */
+
+/* Ensure consistent color for all themes - disabled to remove visible line */
+[data-theme] .content-area::before {
+	background: transparent; /* Changed from #ccc to transparent to remove visible line */
 }
 
-/* Ensure consistent color for all themes */
-[data-theme] .content-area::before {
-	background: #ccc;
+/* Standardized circular icon styles for consistency */
+.header-btn,
+.user-avatar,
+.member-avatar,
+.nav-btn {
+	border-radius: 50% !important;
+	aspect-ratio: 1 !important;
+	flex-shrink: 0 !important;
+	box-sizing: border-box !important;
+	transition: all 0.3s ease;
+}
+
+/* Prevent circular icon distortion on various devices */
+.header-btn,
+.user-avatar,
+.member-avatar,
+.nav-btn {
+	transform: translateZ(0);
+	backface-visibility: hidden;
+	-webkit-backface-visibility: hidden;
 }
 
 /* Enhanced Personal Event Button Theme Variations */
@@ -2453,6 +2479,9 @@ button.personal-event-btn,
 		font-size: 16px;
 		margin: 0;
 		flex-shrink: 0;
+		border-radius: 50%;
+		aspect-ratio: 1;
+		box-sizing: border-box;
 	}
 
 	/* Enhanced tab navigation for mobile */
@@ -2841,12 +2870,19 @@ button.personal-event-btn,
 		width: 38px;
 		height: 38px;
 		font-size: 15px;
+		border-radius: 50%;
+		aspect-ratio: 1;
+		flex-shrink: 0;
+		box-sizing: border-box;
 	}
 
 	.user-avatar {
-		width: 36px;
-		height: 36px;
+		width: 38px;
+		height: 38px;
 		font-size: 14px;
+		border-radius: 50%;
+		aspect-ratio: 1;
+		flex-shrink: 0;
 	}
 
 	/* Optimize tab navigation for very small screens */
