@@ -4,6 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Together - Shared Calendar & To-Do</title>
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <!-- Preload emoji fonts for better performance -->
+    <link rel="preload" href="https://fonts.gstatic.com/s/notosansemojicompatible/v16/RxZYPz-FAUqEXyDaU6pWHC8_VzP_t5oeJUNa0ayh.woff2" as="font" type="font/woff2" crossorigin>
     <link rel="stylesheet" href="/styles.css">
     
 </head>
@@ -168,6 +171,7 @@
                 <button class="header-btn" onclick="showJoinModal()" data-tooltip="Join Workspace">➕</button>
                 <button class="header-btn" onclick="showMembersModal()" data-tooltip="Manage Members">👥</button>
                 <button class="header-btn" onclick="showThemeModal()" data-tooltip="Change Theme">🎨</button>
+                <button class="header-btn" onclick="showEventColorsModal()" data-tooltip="Personalize Event Colors">🎨</button>
                 <div class="user-info">
                     <div class="user-avatar" id="current-user-avatar" data-tooltip="Profile Settings">U</div>
                     <div class="user-avatar" id="partner-avatar" style="display: none;">P</div>
@@ -434,6 +438,51 @@
             </div>
         </div>
 
+        <!-- Event Colors Modal -->
+        <div id="eventColorsModal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3 class="modal-title">✨ Customize Personal Event Colors ✨</h3>
+                    <button class="close-btn" onclick="closeModal('eventColorsModal')">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div class="color-settings">
+                        <div class="color-section">
+                            <div class="color-item">
+                                <div class="color-label">
+                                    <span class="user-label">My Events</span>
+                                    <span class="color-preview" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);" onclick="openEventColorPicker('user1')"></span>
+                                </div>
+                                <input type="color" id="user1-event-color" value="#667eea" style="display: none;">
+                            </div>
+                            <div class="color-item">
+                                <div class="color-label">
+                                    <span class="user-label">Partner's Events</span>
+                                    <span class="color-preview" style="background: linear-gradient(135deg, #ff9a8b 0%, #fecfef 100%);" onclick="openEventColorPicker('user2')"></span>
+                                </div>
+                                <input type="color" id="user2-event-color" value="#ff9a8b" style="display: none;">
+                            </div>
+                        </div>
+
+                        <div class="color-hint">
+                            <p>🎨 Click on any color to customize it!</p>
+                            <p>Shared events always use the theme's gradient colors and cannot be customized.</p>
+                            <p>Your calendar events will automatically update with the new colors.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <div class="btn-group">
+                        <button type="button" class="btn btn-secondary" onclick="resetEventColors()">Reset to Default</button>
+                        <button type="button" class="btn btn-primary" onclick="saveEventColors()">
+                            <span>Save Colors</span>
+                            <span class="button-loader" style="display: none;"></span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- Manage Members Modal -->
         <div id="membersModal" class="modal">
             <div class="modal-content">
@@ -496,5 +545,7 @@
     </div>
 
     <script src="/script.js" type="module"></script>
+    <!-- Event Color Persistence Test (enabled for debugging) -->
+    <script src="/test-color-persistence.js"></script>
 </body>
 </html>

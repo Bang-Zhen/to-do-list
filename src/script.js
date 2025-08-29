@@ -1,3 +1,181 @@
+// Immediate global function definitions to prevent race condition errors
+// These are executed even before the module is fully loaded
+
+// Define showEventColorsModal function immediately to prevent ReferenceError
+if (typeof window.showEventColorsModal === 'undefined') {
+    window.showEventColorsModal = function() {
+        console.log('⏳ Event colors modal requested but still loading...');
+        showNotification('Loading interface...', 'info');
+
+        // Wait a moment then try to call the real function
+        setTimeout(() => {
+            if (typeof showEventColorsModal !== 'undefined') {
+                showEventColorsModal();
+            } else {
+                console.error('❌ showEventColorsModal function failed to load');
+                showNotification('Unable to load event colors. Please refresh the page.', 'error');
+            }
+        }, 100);
+       };
+     }
+     
+     // Define showThemeModal function immediately to prevent ReferenceError
+     if (typeof window.showThemeModal === 'undefined') {
+         window.showThemeModal = function() {
+             console.log('⏳ Theme modal requested but still loading...');
+             showNotification('Loading interface...', 'info');
+     
+             // Wait a moment then try to call the real function
+             setTimeout(() => {
+                 if (typeof showThemeModal !== 'undefined') {
+                     showThemeModal();
+                 } else {
+                     console.error('❌ showThemeModal function failed to load');
+                     showNotification('Unable to load theme settings. Please refresh the page.', 'error');
+                 }
+             }, 100);
+         };
+     }
+     
+     // Define showMembersModal function immediately to prevent ReferenceError
+     if (typeof window.showMembersModal === 'undefined') {
+         window.showMembersModal = function() {
+             console.log('⏳ Members modal requested but still loading...');
+             showNotification('Loading interface...', 'info');
+     
+             // Wait a moment then try to call the real function
+             setTimeout(() => {
+                 if (typeof showMembersModal !== 'undefined') {
+                     showMembersModal();
+                 } else {
+                     console.error('❌ showMembersModal function failed to load');
+                     showNotification('Unable to load members list. Please refresh the page.', 'error');
+                 }
+             }, 100);
+         };
+     }
+     
+     // Define showInviteModal function immediately to prevent ReferenceError
+     if (typeof window.showInviteModal === 'undefined') {
+         window.showInviteModal = function() {
+             console.log('⏳ Invite modal requested but still loading...');
+             showNotification('Loading interface...', 'info');
+     
+             // Wait a moment then try to call the real function
+             setTimeout(() => {
+                 if (typeof showInviteModal !== 'undefined') {
+                     showInviteModal();
+                 } else {
+                     console.error('❌ showInviteModal function failed to load');
+                     showNotification('Unable to load invite settings. Please refresh the page.', 'error');
+                 }
+             }, 100);
+         };
+     }
+     
+     // Define showJoinModal function immediately to prevent ReferenceError
+     if (typeof window.showJoinModal === 'undefined') {
+         window.showJoinModal = function() {
+             console.log('⏳ Join modal requested but still loading...');
+             showNotification('Loading interface...', 'info');
+     
+             // Wait a moment then try to call the real function
+             setTimeout(() => {
+                 if (typeof showJoinModal !== 'undefined') {
+                     showJoinModal();
+                 } else {
+                     console.error('❌ showJoinModal function failed to load');
+                     showNotification('Unable to load join workspace. Please refresh the page.', 'error');
+                 }
+             }, 100);
+         };
+     }
+     
+     // Define openEventModal function immediately to prevent ReferenceError
+     if (typeof window.openEventModal === 'undefined') {
+         window.openEventModal = function(selectedDate, isNewEvent = false, isShared = true) {
+             console.log('⏳ Event modal requested but still loading...');
+             showNotification('Loading interface...', 'info');
+     
+             // Wait a moment then try to call the real function
+             setTimeout(() => {
+                 if (typeof openEventModal !== 'undefined') {
+                     openEventModal(selectedDate, isNewEvent, isShared);
+                 } else {
+                     console.error('❌ openEventModal function failed to load');
+                     showNotification('Unable to load event creator. Please refresh the page.', 'error');
+                 }
+             }, 100);
+         };
+     }
+     
+     // Define other commonly used functions to prevent similar errors
+if (typeof window.openModal === 'undefined') {
+    window.openModal = function(modalId) {
+        console.log('⏳ Modal requested but still loading:', modalId);
+        setTimeout(() => {
+            if (typeof openModal !== 'undefined') {
+                openModal(modalId);
+            } else {
+                console.warn('❌ Modal function not available:', modalId);
+            }
+        }, 100);
+    };
+}
+
+// Define closeModal function
+if (typeof window.closeModal === 'undefined') {
+    window.closeModal = function(modalId) {
+        console.log('⏳ Close modal requested but still loading:', modalId);
+        setTimeout(() => {
+            if (typeof closeModal !== 'undefined') {
+                closeModal(modalId);
+            } else {
+                // Fallback: try to find and close modal manually
+                const modal = document.getElementById(modalId);
+                if (modal && modal.classList.contains('active')) {
+                    modal.classList.remove('active');
+                    console.log('✅ Successfully closed modal:', modalId);
+                }
+            }
+        }, 100);
+    };
+}
+
+// Define showNotification function to prevent errors
+if (typeof window.showNotification === 'undefined') {
+    window.showNotification = function(message, type = 'info') {
+        console.log('📝 Notification (while loading):', message);
+
+        // Fallback: create a simple in-page notification
+        const notification = document.createElement('div');
+        notification.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: ${type === 'success' ? '#4CAF50' : type === 'error' ? '#f44336' : '#2196F3'};
+            color: white;
+            padding: 12px 20px;
+            border-radius: 8px;
+            z-index: 9999;
+            font-family: sans-serif;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+            max-width: 300px;
+            word-wrap: break-word;
+        `;
+        notification.textContent = message;
+        document.body.appendChild(notification);
+
+        // Auto-remove after 3 seconds
+        setTimeout(() => {
+            if (document.body.contains(notification)) {
+                document.body.removeChild(notification);
+            }
+        }, 3000);
+    };
+}
+
+// Firebase imports - these are loaded from the HTML
 // Firebase imports - these are loaded from the HTML
 
 // Import Firebase functions
@@ -34,6 +212,7 @@ const currentDate = new Date();
 // App State
 // let currentUser = null;
 let currentWorkspace = null;
+let workspaceMembers = []; // Store workspace members for synchronous access
 let events = [];
 // let todos = [];
 let unsubscribeEvents = null;
@@ -92,7 +271,9 @@ $currentUser.subscribe((user) => {
 	}
 });
 
-window.addEventListener('load', () => {
+window.addEventListener('load', async () => {
+	// Initialize colors immediately when DOM is ready
+	await initializeEventColors();
 	initializeApp();
 	loadSavedTheme();
 });
@@ -484,6 +665,9 @@ async function loadWorkspace() {
 					document.getElementById('invite-code-text').textContent =
 						workspace.inviteCode;
 
+					// Store members for synchronous access
+					workspaceMembers = workspace.members || [];
+
 					// Update partner avatar if there are 2 members
 					updatePartnerInfo(workspace.members);
 				}
@@ -495,18 +679,24 @@ async function loadWorkspace() {
 		showMainApp();
 		hideAuthModal();
 
-		generateCalendar(currentDate);
-		console.log('Workspace loaded successfully');
+		// Wait for colors to be initialized before generating calendar
+		waitForColors().then(() => {
+			console.log('🎨 Colors ready, generating calendar with custom colors');
+			generateCalendar(currentDate);
+			console.log('✅ Calendar generated successfully with colors');
 
-		// Set default tab to "My Tasks" if no tab is active
-		const activeTab = document.querySelector('.tab-btn.active');
-		console.log('🚀 Checking for active tab after workspace load. Active tab found:', !!activeTab);
-		if (!activeTab) {
-			console.log('🎯 No active tab found, setting default to my-tasks');
-			switchTab('my-tasks').catch(console.error);
-		} else {
-			console.log('✅ Active tab already exists:', activeTab.textContent.trim());
-		}
+			// Set default tab to "My Tasks" if no tab is active
+			const activeTab = document.querySelector('.tab-btn.active');
+			console.log('🚀 Checking for active tab after workspace load. Active tab found:', !!activeTab);
+			if (!activeTab) {
+				console.log('🎯 No active tab found, setting default to my-tasks');
+				switchTab('my-tasks').catch(console.error);
+			} else {
+				console.log('✅ Active tab already exists:', activeTab.textContent.trim());
+			}
+		});
+
+		console.log('Workspace loaded successfully');
 	} catch (error) {
 		console.error('Error loading workspace:', error);
 		showNotification(`Error loading workspace: ${error.message}`, 'error');
@@ -875,9 +1065,76 @@ function generateCalendar(date) {
 					const eventElement = document.createElement('div');
 					eventElement.className = `event-pill ${event.shared ? 'shared' : ''} ${event.attachmentUrl ? 'has-attachment' : ''}`;
 					eventElement.setAttribute('data-event-id', event.id);
-					eventElement.setAttribute('style', 'position: relative; z-index: 2'); // Ensure single-day events are above multi-day ones
+
+					// Use event-specific colors if available, otherwise fall back to default colors
+					const eventUserType = event.shared ? 'shared' : getEventTypeForUser(event);
+					const eventColor = event.color || getEventColor(eventUserType);
+					const borderColor = event.borderColor || getEventColor(eventUserType);
+
+					// Ensure colors are properly parsed and applied with strict validation
+					let finalEventColor = eventColor;
+					let finalBorderColor = borderColor;
+
+					console.log(`🎨 Processing event: "${event.title}" | shared: ${event.shared} | userType: ${eventUserType}`);
+					console.log(`🎨 Original colors - event: ${eventColor}, border: ${borderColor}`);
+					console.log(`🎨 Current eventColors in memory:`, window.eventColors);
+
+					// Check if we have custom colors stored, otherwise use defaults
+					if (window.eventColors && window.eventColors[eventUserType]) {
+						finalEventColor = window.eventColors[eventUserType];
+						finalBorderColor = window.eventColors[eventUserType];
+						console.log(`✅ Using custom color for ${eventUserType}: ${finalEventColor}`);
+					} else {
+						finalEventColor = defaultEventColors[eventUserType] || eventColor;
+						finalBorderColor = defaultEventColors[eventUserType] || borderColor;
+						console.log(`⚠️ Using default color for ${eventUserType}: ${finalEventColor}`);
+					}
+
+					// Enhanced color validation with better CSS variable support and debug logging
+					const isValidColor = (color) => {
+						if (!color) return false;
+						const trimmed = color.trim();
+
+						// Check for hex colors (#RRGGBB or #RGB)
+						if (trimmed.match(/^#([0-9A-F]{3}|[0-9A-F]{6})$/i)) return true;
+
+						// Check for rgb/rgba colors
+						if (trimmed.startsWith('rgb') || trimmed.startsWith('rgba')) return true;
+
+						// Check for CSS variables (must start with 'var(' and end with ')')
+						if (trimmed.startsWith('var(') && trimmed.endsWith(')')) return true;
+
+						// Check for HSL colors
+						if (trimmed.startsWith('hsl') || trimmed.startsWith('hsla')) return true;
+
+						// Check for named colors (basic validation)
+						if (trimmed.match(/^[a-z]+$/i)) return true;
+
+						return false;
+					};
+
+					// Validate and fix finalEventColor
+					if (!isValidColor(finalEventColor)) {
+						console.warn(`🎨 Invalid event color detected: "${finalEventColor}", using fallback`);
+						finalEventColor = defaultEventColors[eventUserType] || '#667eea';
+						console.log(`🔧 Applied fallback event color: ${finalEventColor}`);
+					}
+
+					// Validate and fix finalBorderColor (FIXED: was missing validation)
+					if (!isValidColor(finalBorderColor)) {
+						console.warn(`🎨 Invalid border color detected: "${finalBorderColor}", using fallback`);
+						finalBorderColor = defaultEventColors[eventUserType] || '#667eea';
+						console.log(`🔧 Applied fallback border color: ${finalBorderColor}`);
+					}
+
+					eventElement.setAttribute('style', `position: relative; z-index: 2; ${eventUserType === 'shared' ? '/* background gradient handled by CSS */' : `background: ${finalEventColor};`} border-left: 4px solid ${finalBorderColor}; border-radius: 4px;`);
 					eventElement.textContent = event.title || 'Untitled Event';
-					console.log(`🏷️ Created event element with title: "${event.title}"`);
+
+					// Add data attribute for debugging
+					eventElement.setAttribute('data-event-type', eventUserType);
+					eventElement.setAttribute('data-color-used', finalEventColor);
+
+					console.log(`🎯 Final event styling - ${eventUserType}: bg=${finalEventColor}, border=${finalBorderColor}`);
 	
 					// Add click handler
 					eventElement.addEventListener('click', (e) => {
@@ -951,12 +1208,68 @@ function generateCalendar(date) {
 						// Start new span for this week
 						currentWeekSpan = document.createElement('div');
 						currentWeekSpan.className = `event-span ${event.shared ? 'shared' : ''} ${dateStr === event.startDate ? 'start' : ''}`;
-						
+
 						// Get the grid's dimensions
 						const dayRect = dayElement.getBoundingClientRect();
 						const gridRect = grid.getBoundingClientRect();
 						const cellHeight = dayRect.height;
-						
+
+						// Get the dynamic color for the event based on event-specific colors or custom colors
+						const eventUserType = event.shared ? 'shared' : getEventTypeForUser(event);
+						const eventColor = event.color || getEventColor(eventUserType);
+						const borderColor = event.borderColor || getEventColor(eventUserType);
+
+						console.log(`🔗 Processing multi-day event: "${event.title}" | shared: ${event.shared} | userType: ${eventUserType}`);
+						console.log(`🔗 Original colors - event: ${eventColor}, border: ${borderColor}`);
+
+						// Get validated colors for multi-day events
+						let useEventColor = eventColor;
+						let useBorderColor = borderColor;
+
+						if (window.eventColors && window.eventColors[eventUserType]) {
+							useEventColor = window.eventColors[eventUserType];
+							useBorderColor = window.eventColors[eventUserType];
+							console.log(`✅ Using custom multi-day color for ${eventUserType}: ${useEventColor}`);
+						} else {
+							useEventColor = defaultEventColors[eventUserType] || eventColor;
+							useBorderColor = defaultEventColors[eventUserType] || borderColor;
+							console.log(`⚠️ Using default multi-day color for ${eventUserType}: ${useEventColor}`);
+						}
+
+						// Enhanced color validation for multi-day events
+						const isValidColorMultiDay = (color) => {
+							if (!color) return false;
+							const trimmed = color.trim();
+
+							// Check for hex colors (#RRGGBB or #RGB)
+							if (trimmed.match(/^#([0-9A-F]{3}|[0-9A-F]{6})$/i)) return true;
+
+							// Check for rgb/rgba colors
+							if (trimmed.startsWith('rgb') || trimmed.startsWith('rgba')) return true;
+
+							// Check for CSS variables (must start with 'var(' and end with ')')
+							if (trimmed.startsWith('var(') && trimmed.endsWith(')')) return true;
+
+							// Check for HSL colors
+							if (trimmed.startsWith('hsl') || trimmed.startsWith('hsla')) return true;
+
+							// Check for named colors (basic validation)
+							if (trimmed.match(/^[a-z]+$/i)) return true;
+
+							return false;
+						};
+
+						if (!isValidColorMultiDay(useEventColor)) {
+							console.warn(`🎨 Invalid multi-day event color detected: "${useEventColor}", using fallback`);
+							useEventColor = defaultEventColors[eventUserType] || '#667eea';
+						}
+						if (!isValidColorMultiDay(useBorderColor)) {
+							console.warn(`🎨 Invalid multi-day border color detected: "${useBorderColor}", using fallback`);
+							useBorderColor = defaultEventColors[eventUserType] || '#667eea';
+						}
+
+						console.log(`🔗 Final multi-day colors - ${eventUserType}: bg=${useEventColor}, border=${useBorderColor}`);
+
 						// Create positioning styles
 						const styles = {
 							position: 'absolute',
@@ -964,11 +1277,11 @@ function generateCalendar(date) {
 							width: '14.28%', // Initial width of one day
 							top: `${(weekIndex * cellHeight) + 8}px`, // Position at top of cell
 							height: '20px',
-							background: event.shared ? 'var(--primary-gradient)' : 'var(--secondary-gradient)',
+							background: event.color ? event.color : `linear-gradient(135deg, ${useEventColor}, ${useEventColor}99)`,
 							padding: '2px 6px',
 							fontSize: '0.8rem',
 							borderRadius: '4px',
-							border: '1px solid rgba(255,255,255,0.2)',
+							border: event.borderColor ? `1px solid ${event.borderColor}` : `1px solid ${useBorderColor}99`,
 							boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
 							cursor: 'pointer',
 							zIndex: '2', // Higher z-index to be above day cells
@@ -3616,23 +3929,498 @@ function setupDateValidation() {
 // Initialize auto-save when app loads
 document.addEventListener('DOMContentLoaded', setupAutoSave);
 
-// Export functions for global access
-window.switchTab = switchTab;
-window.changeMonth = changeMonth;
-window.openModal = openModal;
-window.closeModal = closeModal;
-window.openEventModal = openEventModal;
-window.openTodoModal = openTodoModal;
-window.openEventDetails = openEventDetails;
-window.toggleTodo = toggleTodo;
-window.signOut = signOut;
-window.showInviteModal = showInviteModal;
-window.showJoinModal = showJoinModal;
-window.copyInviteCode = copyInviteCode;
-window.showMembersModal = showMembersModal;
-window.removeMember = removeMember;
-window.showThemeModal = showThemeModal;
-window.setTheme = setTheme;
-window.clearAllCalendarEvents = clearAllCalendarEvents;
-window.openDayEventsModal = openDayEventsModal;
-window.deleteEvent = deleteEvent;
+// Event Colors Management
+let eventColors = {};
+let colorsInitialized = false;
+
+// Enhanced color initialization with promise-based loading
+function initializeEventColors() {
+	return new Promise((resolve, reject) => {
+		console.log('🔧 initializeEventColors called');
+
+		try {
+			console.log('🔧 Checking localStorage for eventColors...');
+			const savedColors = localStorage.getItem('eventColors');
+
+			if (savedColors) {
+				const parsedColors = JSON.parse(savedColors);
+				// Validate the parsed data structure
+				if (typeof parsedColors === 'object' && parsedColors !== null) {
+					eventColors = parsedColors;
+					// Also update window.eventColors for cross-module access
+					window.eventColors = eventColors;
+					console.log('✅ Event colors loaded from localStorage:', eventColors);
+					console.log('✅ window.eventColors updated:', window.eventColors);
+				} else {
+					console.warn('⚠️ Invalid color data structure, using defaults');
+					eventColors = {};
+					window.eventColors = {};
+					localStorage.setItem('eventColors', JSON.stringify(eventColors));
+				}
+			} else {
+				// If no saved colors, initialize as empty object
+				eventColors = {};
+				window.eventColors = {};
+				localStorage.setItem('eventColors', JSON.stringify({}));
+				console.log('ℹ️ No saved event colors found, initialized empty');
+			}
+
+			// Mark as initialized
+			colorsInitialized = true;
+
+			// Verify the colors were properly loaded
+			console.log('🔍 Verification - eventColors contents:', {
+				localStorage: JSON.parse(localStorage.getItem('eventColors') || '{}'),
+				memoryEventColors: eventColors,
+				windowEventColors: window.eventColors
+			});
+
+			console.log('✅ Colors loaded successfully - ready for immediate use');
+			resolve(eventColors);
+		} catch (error) {
+			console.warn('❌ Error loading event colors from localStorage:', error);
+			eventColors = {};
+			window.eventColors = {};
+			colorsInitialized = true; // Still mark as initialized to prevent infinite waiting
+			console.log('⚠️ Color loading error handled, using default colors');
+			resolve(eventColors); // Resolve anyway to prevent blocking
+		}
+	});
+}
+
+// Helper function to wait for colors to be ready
+function waitForColors(maxWaitMs = 3000) {
+	return new Promise((resolve) => {
+		if (colorsInitialized) {
+			resolve(eventColors);
+			return;
+		}
+
+		let attempts = 0;
+		const checkInterval = setInterval(() => {
+			attempts += 100;
+
+			if (colorsInitialized) {
+				clearInterval(checkInterval);
+				resolve(eventColors);
+			} else if (attempts >= maxWaitMs) {
+				clearInterval(checkInterval);
+				console.warn('⚠️ Color initialization timeout, proceeding with defaults');
+				resolve(eventColors);
+			}
+		}, 100);
+	});
+}
+
+// Default colors for event categorization
+const defaultEventColors = {
+	user1: '#667eea', // My events - purple/blue
+	user2: '#ff9a8b', // Partner's events - pink/coral
+	shared: 'var(--secondary-gradient)'  // Shared events - theme gradient
+};
+
+// Colors are now initialized in window load listener
+console.log('🎨 Event colors will be initialized on DOM load');
+
+function showEventColorsModal() {
+	console.log('🎨 Opening event colors modal');
+	console.log('🎨 Current eventColors:', eventColors);
+	console.log('🎨 Default colors:', defaultEventColors);
+
+	// Load current colors, use defaults if not set
+	const colors = { ...defaultEventColors, ...eventColors };
+	console.log('🎨 Combined colors for display:', colors);
+
+	// Update color previews (only for personal events, shared excluded)
+	document.querySelectorAll('.color-item').forEach((item, index) => {
+		const userType = ['user1', 'user2'][index]; // Only personal event types
+		const colorValue = colors[userType];
+		const colorPreview = item.querySelector('.color-preview');
+		const colorInput = item.querySelector('input[type="color"]');
+
+		console.log(`🎨 Setting ${userType} to ${colorValue}`);
+
+		if (colorPreview && colorInput) {
+			colorPreview.style.background = `linear-gradient(135deg, ${colorValue} 0%, ${colorValue}EE 100%)`;
+			colorInput.value = colorValue;
+
+			// Add visual feedback for updated colors
+			setTimeout(() => {
+				colorPreview.classList.add('updated');
+				setTimeout(() => colorPreview.classList.remove('updated'), 1000);
+			}, 200 * index);
+		}
+	});
+
+	openModal('eventColorsModal');
+
+	console.log('🎨 Personal event colors modal opened successfully');
+}
+
+function openEventColorPicker(userType) {
+	// Create and show color picker overlay
+	const overlay = document.createElement('div');
+	overlay.className = 'color-picker-overlay';
+	overlay.id = 'color-picker-overlay';
+	overlay.innerHTML = `
+		<div class="color-picker-modal">
+			<div class="color-picker-header">
+				<h3 class="color-picker-title">Choose Color</h3>
+				<p class="color-picker-subtitle">Pick a color for your calendar events</p>
+			</div>
+			<div class="color-picker-container">
+				<input type="color" class="color-picker-input" value="${eventColors[userType] || defaultEventColors[userType]}">
+			</div>
+			<div class="color-picker-actions">
+				<button class="btn btn-secondary" onclick="closeEventColorPicker()">Cancel</button>
+				<button class="btn btn-primary" onclick="applyEventColor('${userType}')">Apply</button>
+			</div>
+		</div>
+	`;
+
+	document.body.appendChild(overlay);
+	setTimeout(() => overlay.classList.add('active'), 10);
+}
+
+function closeEventColorPicker() {
+	const overlay = document.getElementById('color-picker-overlay');
+	if (overlay) {
+		overlay.classList.remove('active');
+		setTimeout(() => overlay.remove(), 300);
+	}
+}
+
+function applyEventColor(userType) {
+	const colorInput = document.querySelector('.color-picker-modal .color-picker-input');
+	if (colorInput) {
+		const selectedColor = colorInput.value;
+
+		// Update the color preview in the main modal (only for personal events)
+		const colorItem = Array.from(document.querySelectorAll('.color-item'))[
+			['user1', 'user2'].indexOf(userType)
+		];
+		const colorPreview = colorItem.querySelector('.color-preview');
+
+		if (colorPreview) {
+			colorPreview.style.background = `linear-gradient(135deg, ${selectedColor} 0%, ${selectedColor}EE 100%)`;
+
+			// Show success feedback
+			colorPreview.classList.add('active');
+			setTimeout(() => colorPreview.classList.remove('active'), 1000);
+		}
+
+		closeEventColorPicker();
+		showNotification('🎨 Event color updated! Your calendar events will use the new color.', 'success');
+	}
+}
+
+function saveEventColors() {
+	console.log('🎨 saveEventColors function called');
+
+	const currentUser = $currentUser.get();
+	console.log('👤 Current user:', currentUser);
+
+	if (!currentUser) {
+		console.log('❌ No current user, showing error');
+		showNotification('Please log in to save color preferences', 'error');
+		return;
+	}
+
+	// Get new color values (only for personal events)
+	const newColors = {};
+	const colorInputs = document.querySelectorAll('.color-item input[type="color"]');
+
+	console.log('🎨 Found color inputs (personal events only):', colorInputs.length);
+
+	colorInputs.forEach((input, index) => {
+		const userType = ['user1', 'user2'][index]; // Only personal event types
+		console.log(`🎨 ${userType} input value:`, input.value);
+		newColors[userType] = input.value;
+	});
+
+	console.log('💾 Saving event colors:', newColors);
+
+	// Validate color values
+	const validColors = {};
+	Object.keys(newColors).forEach(key => {
+		if (newColors[key] && /^#[0-9A-F]{6}$/i.test(newColors[key])) {
+			validColors[key] = newColors[key];
+		}
+	});
+
+	console.log('✅ Valid colors after validation:', validColors);
+
+	if (Object.keys(validColors).length === 0) {
+		console.log('❌ No valid colors to save');
+		showNotification('No valid colors to save', 'error');
+		return;
+	}
+
+	try {
+		console.log('🔄 Updating eventColors object...');
+		// Update local storage
+		eventColors = { ...eventColors, ...validColors };
+
+		console.log('💾 Setting localStorage...');
+		localStorage.setItem('eventColors', JSON.stringify(eventColors));
+
+		// Verify localStorage was set
+		const savedColors = localStorage.getItem('eventColors');
+		console.log('🔍 Verification - localStorage contains:', savedColors);
+
+		console.log('✅ Event colors saved to localStorage:', eventColors);
+
+		// Close modal
+		closeModal('eventColorsModal');
+
+		// Show success notification
+		showNotification('✨ Event color preferences saved successfully!', 'success');
+
+		// Synchronize colors across all components immediately
+		updateAllEventColors();
+
+		// Also regenerate calendar to immediately apply new colors
+		if (typeof generateCalendar === 'function') {
+			console.log('🔄 Regenerating calendar with new event colors');
+			generateCalendar(currentDate);
+		}
+
+		// Dispatch event to notify other parts of the app
+		document.dispatchEvent(new CustomEvent('eventColorsUpdated'));
+
+	} catch (error) {
+		console.error('❌ Error saving event colors:', error);
+		console.error('❌ Error details:', {
+			message: error.message,
+			name: error.name,
+			stack: error.stack
+		});
+		showNotification('Error saving color preferences', 'error');
+	}
+}
+
+function cleanupSharedEventColors() {
+	console.log('🧹 Cleaning up shared event colors from localStorage');
+
+	try {
+		const currentColors = JSON.parse(localStorage.getItem('eventColors') || '{}');
+
+		// Remove shared event color if it exists
+		if (currentColors.shared) {
+			delete currentColors.shared;
+			localStorage.setItem('eventColors', JSON.stringify(currentColors));
+			console.log('✅ Shared event color removed from localStorage');
+		}
+
+		// Update in-memory colors
+		if (eventColors.shared) {
+			delete eventColors.shared;
+		}
+
+		showNotification('🏹 Shared event color customization removed!', 'success');
+	} catch (error) {
+		console.error('❌ Error cleaning up shared event colors:', error);
+		showNotification('Error cleaning up colors', 'error');
+	}
+}
+
+function resetEventColors() {
+	console.log('🔄 Resetting event colors to defaults');
+
+	try {
+		eventColors = {};
+		localStorage.setItem('eventColors', JSON.stringify({}));
+		console.log('✅ Event colors reset in localStorage');
+
+		showEventColorsModal(); // Refresh the modal with defaults
+		showNotification('🎨 Event colors reset to defaults!', 'success');
+
+		// Synchronize colors across all components
+		setTimeout(() => {
+			updateAllEventColors();
+		}, 200);
+	} catch (error) {
+		console.error('❌ Error resetting event colors:', error);
+		showNotification('Error resetting colors', 'error');
+	}
+}
+
+// Function to map user IDs to event types for color determination
+function getEventTypeForUser(event) {
+	// If event is shared, use shared color
+	if (event.shared) {
+		return 'shared';
+	}
+
+	// If event is personal, map creator to appropriate user type
+	const currentUser = $currentUser.get();
+	if (!event.createdBy || !currentUser || !workspaceMembers || workspaceMembers.length === 0) {
+		return 'user1'; // fallback
+	}
+
+	try {
+		// Use stored workspace members to determine user type
+		// For now, use first member as user1, second as user2
+		const currentUserIndex = workspaceMembers.indexOf(currentUser.uid);
+		const eventCreatorIndex = workspaceMembers.indexOf(event.createdBy);
+
+		// Map relative to current user for better UX
+		if (currentUserIndex !== -1 && eventCreatorIndex !== -1) {
+			// If event creator is current user, use 'user1' color
+			if (event.createdBy === currentUser.uid) {
+				return 'user1';
+			}
+			// If event creator is another user, use 'user2' color
+			else {
+				return 'user2';
+			}
+		} else {
+			// Fallback for unknown users
+			return 'user1';
+		}
+	} catch (error) {
+		console.warn('Error determining event user type:', error);
+		return 'user1'; // fallback
+	}
+}
+
+// Function to get the color for a specific event type
+function getEventColor(eventType) {
+	console.log('🎨 getEventColor called with eventType:', eventType);
+	console.log('🎨 Current eventColors:', eventColors);
+	console.log('🎨 Default colors:', defaultEventColors);
+
+	// For shared events, always use theme gradient - never custom colors
+	if (eventType === 'shared') {
+		const themeGradient = 'var(--secondary-gradient)';
+		console.log('🎨 Returning shared event theme gradient:', themeGradient);
+		return themeGradient;
+	}
+
+	// For personal events, use the user-specific custom colors
+	const colors = { ...defaultEventColors, ...eventColors };
+	const selectedColor = colors[eventType] || defaultEventColors.user1;
+
+	console.log('🎨 Combined colors:', colors);
+	console.log('🎨 Selected color for ' + eventType + ':', selectedColor);
+	return selectedColor;
+}
+
+// Enhanced function to synchronize color updates across the app
+function updateAllEventColors() {
+	console.log('🔄 Synchronizing all event colors...');
+
+	// Force refresh calendar with current colors
+	if (typeof generateCalendar === 'function') {
+		console.log('🔄 Regenerating calendar with updated colors');
+		generateCalendar(currentDate);
+	}
+
+	// Update any open event modals or previews
+	if (document.getElementById('eventColorsModal') && document.getElementById('eventColorsModal').classList.contains('active')) {
+		console.log('🔄 Refreshing event colors modal');
+		showEventColorsModal();
+	}
+
+	console.log('✅ Event colors synchronized');
+}
+
+
+// Enhanced Global Function Exposure System
+(function enhanceGlobalFunctionExposure() {
+    console.log('🚀 Enhancing global function exposure with safety controls...');
+
+    // Core app initialization functions
+    const coreFunctions = {
+        showEventColorsModal,
+        showThemeModal,
+        showMembersModal,
+        showInviteModal,
+        showJoinModal,
+        openEventModal,
+        openModal,
+        closeModal,
+        showNotification,
+        getEventColor,
+        getEventTypeForUser,
+        generateCalendar,
+        getEventsForDate,
+        changeMonth,
+        switchTab,
+        openTodoModal,
+        signOut,
+        saveEventColors,
+        resetEventColors,
+        cleanupSharedEventColors,
+        testSharedColorCustomization,
+        applyEventColor,
+        closeEventColorPicker,
+        openEventColorPicker
+    };
+
+    // Enhanced exposure with backup and overwrite protection
+    Object.entries(coreFunctions).forEach(([functionName, functionRef]) => {
+        // Store original placeholder function if exists
+        if (window[functionName] && typeof window[functionName] !== 'function') {
+            window[`_${functionName}Bak`] = window[functionName];
+        }
+
+        // Override placeholder with real function
+        window[functionName] = functionRef;
+
+        console.log(`✅ Enhanced global exposure: ${functionName}`);
+    });
+
+    // Dispatch multiple events to ensure all listeners are notified
+    const eventNames = [
+        'functionsReady',
+        'appFunctionsReady',
+        'scriptFunctionsLoaded',
+        'modalFunctionsReady'
+    ];
+
+    eventNames.forEach(eventName => {
+        setTimeout(() => {
+            document.dispatchEvent(new CustomEvent(eventName, {
+                detail: { functions: coreFunctions }
+            }));
+            console.log(`📡 Dispatched ${eventName} event`);
+        }, 10);
+    });
+
+    console.log('🎉 All core functions successfully exposed globally with recovery mechanisms');
+})();
+
+// Application ready indicator
+window.appReady = true;
+console.log('🎯 Application functions fully loaded and ready');
+
+// Force refresh colors when workspace loads
+window.addEventListener('workspace-loaded', () => {
+	console.log('🔄 Workspace loaded, ensuring color synchronization');
+	setTimeout(() => {
+		updateAllEventColors();
+		// Generate calendar after colors are synced
+		console.log('📅 Generating calendar after workspace loaded');
+		generateCalendar(currentDate);
+	}, 500);
+});
+
+// Test function to verify shared events use theme gradients
+function testSharedColorCustomization() {
+	console.log('🔍 Testing shared event color behavior...');
+
+	// Test 1: Check if getEventColor returns theme gradient for shared events
+	const sharedColor = getEventColor('shared');
+	console.log('✅ Shared event color:', sharedColor);
+
+	// Test 2: Check localStorage doesn't contain shared colors
+	const stored = JSON.parse(localStorage.getItem('eventColors') || '{}');
+	console.log('✅ Stored event colors:', stored);
+	console.log('✅ Shared color in storage:', !!stored.shared);
+
+	// Test 3: Check eventColors object doesn't contain shared
+	console.log('✅ Shared color in memory:', !!eventColors.shared);
+
+	showNotification('🔍 Color test completed! Check console for details.', 'info');
+}
