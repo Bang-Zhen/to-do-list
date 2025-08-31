@@ -108,6 +108,39 @@ if (typeof window.showEventColorsModal === 'undefined') {
              }, 100);
          };
      }
+      // Define deleteEvent function immediately to prevent ReferenceError
+      if (typeof window.deleteEvent === 'undefined') {
+          window.deleteEvent = function(eventId) {
+              console.log('⏳ deleteEvent requested but still loading...');
+              setTimeout(() => {
+                  if (typeof deleteEvent !== 'undefined') {
+                      deleteEvent(eventId);
+                  } else {
+                      console.error('❌ deleteEvent function failed to load');
+                      if (window.showNotification) {
+                          window.showNotification('Unable to delete event. Please refresh the page.', 'error');
+                      }
+                  }
+              }, 100);
+          };
+      }
+
+      // Define openEventDetails function immediately to prevent ReferenceError
+      if (typeof window.openEventDetails === 'undefined') {
+          window.openEventDetails = function(eventId) {
+              console.log('⏳ openEventDetails requested but still loading...');
+              setTimeout(() => {
+                  if (typeof openEventDetails !== 'undefined') {
+                      openEventDetails(eventId);
+                  } else {
+                      console.error('❌ openEventDetails function failed to load');
+                      if (window.showNotification) {
+                          window.showNotification('Unable to load event details. Please refresh the page.', 'error');
+                      }
+                  }
+              }, 100);
+          };
+      }
      
      // Define other commonly used functions to prevent similar errors
 if (typeof window.openModal === 'undefined') {
@@ -4355,7 +4388,9 @@ function updateAllEventColors() {
         testSharedColorCustomization,
         applyEventColor,
         closeEventColorPicker,
-        openEventColorPicker
+        openEventColorPicker,
+        deleteEvent,
+        openEventDetails
     };
 
     // Enhanced exposure with backup and overwrite protection
