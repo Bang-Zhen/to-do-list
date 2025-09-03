@@ -140,6 +140,23 @@ if (typeof window.showEventColorsModal === 'undefined') {
                   }
               }, 100);
           };
+      // Define setTheme function immediately to prevent ReferenceError
+      if (typeof window.setTheme === 'undefined') {
+          window.setTheme = function(themeName) {
+              console.log('⏳ Theme switch requested but still loading...');
+              showNotification('Loading interface...', 'info');
+
+              // Wait a moment then try to call the real function
+              setTimeout(() => {
+                  if (typeof setTheme !== 'undefined') {
+                      setTheme(themeName);
+                  } else {
+                      console.error('❌ setTheme function failed to load');
+                      showNotification('Unable to switch theme. Please refresh the page.', 'error');
+                  }
+              }, 100);
+          };
+      }
       }
      
      // Define other commonly used functions to prevent similar errors
@@ -2980,6 +2997,23 @@ async function deleteTodo(todoId) {
 
 function showThemeModal() {
 	openModal('themeModal');
+
+	// Add event listeners for theme cards to prevent race condition errors
+	setTimeout(() => {
+		document.querySelectorAll('.theme-card').forEach((card) => {
+			// Remove any existing event listeners first
+			const newCard = card.cloneNode(true);
+			if (card.parentNode) {
+				card.parentNode.replaceChild(newCard, card);
+			}
+
+			// Add proper event listener
+			newCard.addEventListener('click', async () => {
+				const theme = newCard.dataset.theme;
+				await setTheme(theme);
+			});
+		});
+	}, 100); // Small delay to ensure modal is fully rendered
 }
 
 async function setTheme(themeName) {
@@ -4367,6 +4401,7 @@ function updateAllEventColors() {
     const coreFunctions = {
         showEventColorsModal,
         showThemeModal,
+        setTheme,
         showMembersModal,
         showInviteModal,
         showJoinModal,
