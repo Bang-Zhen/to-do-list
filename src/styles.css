@@ -2,6 +2,14 @@
 @import url("https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&family=Space+Grotesk:wght@500;700&display=swap");
 @import url("https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Outfit:wght@400;500;600;700&display=swap");
 
+/* Emoji Font Declaration with System Fallbacks */
+@font-face {
+    font-family: "Noto Sans Emoji Compatible";
+    src: local("Apple Color Emoji"), local("Segoe UI Emoji"), local("Segoe UI Symbol"), local("Android Emoji"), local("EmojiSymbols"), local("EmojiOne Mozilla");
+    font-display: swap;
+    unicode-range: U+00A9, U+00AE, U+1F000-1F9FF, U+2600-26FF, U+2700-27BF, U+2B50, U+2B55;
+}
+
 * {
 	margin: 0;
 	padding: 0;
@@ -25,8 +33,8 @@
 	--task-item-bg: rgba(0, 0, 0, 0.2);
 
 	/* Standardized font variables for consistency */
-	--font-family-primary: "Outfit", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-	--font-family-secondary: "DM Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+	--font-family-primary: "Outfit", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans Emoji Compatible", sans-serif;
+	--font-family-secondary: "DM Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans Emoji Compatible", sans-serif;
 	--font-weight-normal: 400;
 	--font-weight-medium: 500;
 	--font-weight-semibold: 600;
@@ -103,11 +111,17 @@
 }
 
 body {
-	font-family:
-		"DM Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+	font-family: var(--font-family-secondary);
 	background: var(--primary-gradient);
 	min-height: 100vh;
 	overflow-x: hidden;
+
+	/* Emoji rendering optimizations */
+	font-variant-emoji: unicode;
+	text-rendering: optimizeLegibility;
+	font-display: swap;
+	-webkit-font-smoothing: antialiased;
+	-moz-osx-font-smoothing: grayscale;
 }
 
 /* Progress Bar */
