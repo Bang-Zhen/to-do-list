@@ -950,19 +950,25 @@ function calculateEventPosition(event, dayEvents, dayElement, maxVisibleEvents =
 	const isMultiDay = eventCategory !== 'single-day';
 
 	// Base positioning
-	let topOffset = 25; // Start below day number
-	let eventHeight = isMultiDay ? 20 : 18;
-	let eventSpacing = 4;
+	let topOffset = 4; // Start below day number
+
+	// Shift multi-day events down by 22 pixels to correct positioning
+	if (isMultiDay) {
+		topOffset += 79;
+	}
+
+	let eventHeight = 22
+	let eventSpacing = 6;
 
 	// Check for existing events in this day
 	const existingEvents = dayEvents.filter(e => e.id !== event.id);
 	const collisions = existingEvents.filter(existing => {
-		const existingCategory = categorizeEventDuration(existing);
-		const existingTop = existing.top || topOffset;
-		const existingBottom = existingTop + (existingCategory !== 'single-day' ? 20 : 18);
+	    const existingCategory = categorizeEventDuration(existing);
+	    const existingTop = existing.top || topOffset;
+	    const existingBottom = existingTop + eventHeight; // Use standardized height
 
-		// Check vertical overlap
-		return (topOffset < existingBottom && topOffset + eventHeight > existingTop);
+	    // Check vertical overlap
+	    return (topOffset < existingBottom && topOffset + eventHeight > existingTop);
 	});
 
 	// Automatic shifting logic
@@ -1303,6 +1309,8 @@ function generateCalendar(date) {
 				const eventsContainer = dayElement.querySelector('.day-events');
 				console.log(`📦 Events container found: ${eventsContainer ? 'YES' : 'NO'}`);
 				console.log(`📦 Events container children before:`, eventsContainer?.children.length || 0);
+				console.log(`📦 Events container HTML structure:`, eventsContainer?.innerHTML || 'N/A');
+				console.log(`📦 Day element classes before:`, dayElement.className);
 
 				if (eventsContainer) {
 					// Check if event already exists to avoid duplicates
@@ -1314,25 +1322,49 @@ function generateCalendar(date) {
 
 					// Get all events for this day for collision detection
 					const dayEvents = getEventsForDate(event.startDate);
+					console.log(`🎯 Day events for collision detection: ${dayEvents.length}`);
 
 					// Use enhanced rendering with positioning
+					console.log(`🎨 Calling renderEventWithPositioning for: "${event.title}"`);
 					const eventElement = renderEventWithPositioning(event, dayEvents, dayElement);
+					console.log(`🎨 Event element created: ${eventElement ? 'SUCCESS' : 'FAILED'}`);
+					console.log(`🎨 Event element details:`, {
+						tagName: eventElement?.tagName,
+						className: eventElement?.className,
+						innerHTML: eventElement?.innerHTML,
+						style: eventElement?.style.cssText
+					});
 
 					// Store reference to this event for collision detection
 					dayEvents.push(event);
+					console.log(`📊 Day events array after push: ${dayEvents.length}`);
 
+					console.log(`🔧 Attempting to append event element to DOM...`);
 					eventsContainer.appendChild(eventElement);
 					console.log(`✅ Enhanced event element appended to calendar for: "${event.title}"`);
+					console.log(`📦 Events container children after:`, eventsContainer.children.length);
+					console.log(`📦 Events container HTML after:`, eventsContainer.innerHTML);
 
 					// Add has-events class to day element
+					console.log(`🏷️ Adding has-events class to day element...`);
 					dayElement.classList.add('has-events');
 					dayElement.classList.remove('no-events');
 					console.log(`🏷️ Added has-events class to day element for: "${event.title}"`);
+					console.log(`🏷️ Day element classes after:`, dayElement.className);
+
+					// Verify the event element is actually in the DOM
+					const verifyElement = eventsContainer.querySelector(`[data-event-id="${event.id}"]`);
+					console.log(`🔍 Verification: Event element found in DOM: ${verifyElement ? 'YES' : 'NO'}`);
+					if (verifyElement) {
+						console.log(`🔍 Verification: Event element position:`, verifyElement.style.top, verifyElement.style.left);
+					}
 				} else {
 					console.error(`❌ Events container not found in day element for date: ${event.startDate}`);
+					console.error(`❌ Day element innerHTML:`, dayElement.innerHTML);
 				}
 			} else {
 				console.log(`❌ No day element found for date: ${event.startDate}`);
+				console.log(`❌ Available data-date attributes:`, Array.from(grid.querySelectorAll('[data-date]')).map(el => el.getAttribute('data-date')).slice(0, 5));
 			}
 		} else {
 			console.log(`🔗 Processing multi-day event: ${event.title} (${event.startDate} to ${event.endDate})`);
