@@ -869,6 +869,210 @@ function setupTodoListener() {
 	});
 }
 
+// Helper function to convert hex colors to HSLA for better opacity control
+function hexToHsla(hex, alpha = 1) {
+	// Remove # if present
+	hex = hex.replace('#', '');
+
+	// Convert to RGB
+	const r = parseInt(hex.substr(0, 2), 16);
+	const g = parseInt(hex.substr(2, 2), 16);
+	const b = parseInt(hex.substr(4, 2), 16);
+
+	// Convert to HSL
+	const rNorm = r / 255;
+	const gNorm = g / 255;
+	const bNorm = b / 255;
+
+	const max = Math.max(rNorm, gNorm, bNorm);
+	const min = Math.min(rNorm, gNorm, bNorm);
+	let h, s, l = (max + min) / 2;
+
+	if (max === min) {
+		h = s = 0; // achromatic
+	} else {
+		const d = max - min;
+		s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+		switch (max) {
+			case rNorm: h = (gNorm - bNorm) / d + (gNorm < bNorm ? 6 : 0); break;
+			case gNorm: h = (bNorm - rNorm) / d + 2; break;
+			case bNorm: h = (rNorm - gNorm) / d + 4; break;
+		}
+		h /= 6;
+	}
+
+	return `hsl(${Math.round(h * 360)}, ${Math.round(s * 100)}%, ${Math.round(l * 100)}%)`;
+}
+
+// Enhanced Event Duration Categorization System
+function categorizeEventDuration(event) {
+	if (!event.endDate || event.startDate === event.endDate) {
+		return 'single-day';
+	}
+
+	const startDate = new Date(event.startDate);
+	const endDate = new Date(event.endDate);
+	const durationDays = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24)) + 1;
+
+	if (durationDays >= 2 && durationDays <= 3) {
+		return 'short-multiday';
+	} else if (durationDays >= 4) {
+		return 'long-multiday';
+	}
+
+	return 'single-day';
+}
+
+// Enhanced Event Stacking Algorithm with Priority Order
+function sortEventsByPriority(events) {
+	return [...events].sort((a, b) => {
+		const categoryA = categorizeEventDuration(a);
+		const categoryB = categorizeEventDuration(b);
+
+		// Priority order: short-multiday → long-multiday → single-day
+		const priorityOrder = {
+			'short-multiday': 1,
+			'long-multiday': 2,
+			'single-day': 3
+		};
+
+		const priorityA = priorityOrder[categoryA] || 3;
+		const priorityB = priorityOrder[categoryB] || 3;
+
+		return priorityA - priorityB;
+	});
+}
+
+// Advanced Event Positioning System with Collision Detection
+function calculateEventPosition(event, dayEvents, dayElement, maxVisibleEvents = 3) {
+	const dayRect = dayElement.getBoundingClientRect();
+	const eventCategory = categorizeEventDuration(event);
+	const isMultiDay = eventCategory !== 'single-day';
+
+	// Base positioning
+	let topOffset = 25; // Start below day number
+	let eventHeight = isMultiDay ? 20 : 18;
+	let eventSpacing = 4;
+
+	// Check for existing events in this day
+	const existingEvents = dayEvents.filter(e => e.id !== event.id);
+	const collisions = existingEvents.filter(existing => {
+		const existingCategory = categorizeEventDuration(existing);
+		const existingTop = existing.top || topOffset;
+		const existingBottom = existingTop + (existingCategory !== 'single-day' ? 20 : 18);
+
+		// Check vertical overlap
+		return (topOffset < existingBottom && topOffset + eventHeight > existingTop);
+	});
+
+	// Automatic shifting logic
+	if (collisions.length > 0) {
+		// Find the highest collision and position below it
+		const maxCollisionBottom = Math.max(...collisions.map(c =>
+			(c.top || topOffset) + (categorizeEventDuration(c) !== 'single-day' ? 20 : 18)
+		));
+
+		topOffset = maxCollisionBottom + eventSpacing;
+	}
+
+	// Check if we exceed the day's available space
+	const dayMaxHeight = dayRect.height - 10; // Leave some margin
+	const totalHeightNeeded = topOffset + eventHeight;
+
+	if (totalHeightNeeded > dayMaxHeight && dayEvents.length > maxVisibleEvents) {
+		// Enable scrollable view for crowded days
+		dayElement.classList.add('scrollable-events');
+		dayElement.style.overflowY = 'auto';
+		dayElement.style.maxHeight = `${dayMaxHeight}px`;
+	}
+
+	return {
+		top: topOffset,
+		height: eventHeight,
+		category: eventCategory,
+		isColliding: collisions.length > 0
+	};
+}
+
+// Enhanced Event Rendering with Positioning and Improved Color System
+function renderEventWithPositioning(event, dayEvents, dayElement) {
+	const position = calculateEventPosition(event, dayEvents, dayElement);
+	const eventCategory = position.category;
+	const isMultiDay = eventCategory !== 'single-day';
+
+	// Create event element with enhanced styling
+	const eventElement = document.createElement('div');
+	eventElement.className = `event-pill enhanced-event ${event.shared ? 'shared' : ''} ${eventCategory} ${position.isColliding ? 'shifted' : ''}`;
+	eventElement.setAttribute('data-event-id', event.id);
+	eventElement.setAttribute('data-event-category', eventCategory);
+	eventElement.style.top = `${position.top}px`;
+	eventElement.style.height = `${position.height}px`;
+	eventElement.style.position = 'absolute';
+
+	// Enhanced visual styling for premium feel with HSLA opacity and improved borders
+	const eventUserType = event.shared ? 'shared' : getEventTypeForUser(event);
+	const eventColor = event.color || getEventColor(eventUserType);
+	const borderColor = event.borderColor || getEventColor(eventUserType);
+
+	// Convert hex colors to HSLA for better opacity control
+	const baseColor = hexToHsla(eventColor);
+	const borderColorHsla = hexToHsla(borderColor);
+
+	// Apply enhanced glass-like effects and gradients with HSLA
+	if (eventUserType === 'shared') {
+		// Shared events: Use theme gradient with HSLA for better opacity control
+		eventElement.style.background = `linear-gradient(135deg, ${baseColor.replace('hsl', 'hsla').replace(')', ', 0.9)')} 0%, ${baseColor.replace('hsl', 'hsla').replace(')', ', 0.7)')} 70%, ${baseColor.replace('hsl', 'hsla').replace(')', ', 0.6)')} 100%)`;
+		eventElement.style.border = `1px solid ${borderColorHsla.replace('hsl', 'hsla').replace(')', ', 0.4)')}`;
+		eventElement.style.boxShadow = `0 2px 8px ${borderColorHsla.replace('hsl', 'hsla').replace(')', ', 0.2)')}, inset 0 1px 0 rgba(255, 255, 255, 0.25)`;
+	} else {
+		// Personal events: Use personalized colors with enhanced contrast
+		eventElement.style.background = `linear-gradient(135deg, ${baseColor} 0%, ${baseColor.replace('hsl', 'hsla').replace(')', ', 0.85)')} 100%)`;
+		eventElement.style.border = `1px solid ${borderColorHsla.replace('hsl', 'hsla').replace(')', ', 0.6)')}`;
+		eventElement.style.boxShadow = `0 1px 4px ${borderColorHsla.replace('hsl', 'hsla').replace(')', ', 0.25)')}, inset 0 1px 0 rgba(255, 255, 255, 0.15)`;
+	}
+
+	// Add category-specific styling with enhanced visual hierarchy
+	if (eventCategory === 'short-multiday') {
+		eventElement.style.borderLeft = `3px solid ${borderColorHsla}`;
+		eventElement.style.paddingLeft = '6px';
+	} else if (eventCategory === 'long-multiday') {
+		eventElement.style.borderLeft = `3px solid ${borderColorHsla}`;
+		eventElement.style.paddingLeft = '6px';
+		eventElement.style.fontWeight = '600';
+	}
+
+	eventElement.textContent = event.title || 'Untitled Event';
+
+	// Enhanced hover effects and animations
+	eventElement.addEventListener('mouseenter', function() {
+		this.style.transform = 'translateX(2px) scale(1.02)';
+		this.style.transition = 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)';
+		this.style.boxShadow = `0 4px 12px ${borderColor}44, inset 0 1px 0 rgba(255, 255, 255, 0.3)`;
+		this.style.zIndex = '10';
+	});
+
+	eventElement.addEventListener('mouseleave', function() {
+		this.style.transform = 'translateX(0) scale(1)';
+		this.style.boxShadow = eventUserType === 'shared' ?
+			`0 2px 8px ${borderColor}33, inset 0 1px 0 rgba(255, 255, 255, 0.2)` :
+			`0 1px 4px ${borderColor}44`;
+		this.style.zIndex = '2';
+	});
+
+	// Click handler
+	eventElement.addEventListener('click', (e) => {
+		e.stopPropagation();
+		openEventDetails(event.id);
+	});
+
+	// Store position data for collision detection
+	event.top = position.top;
+	event.height = position.height;
+	event.category = eventCategory;
+
+	return eventElement;
+}
+
 // Calendar Functions
 function generateCalendar(date) {
 	const grid = document.getElementById('calendarGrid');
@@ -1069,32 +1273,28 @@ function generateCalendar(date) {
 		}
 	});
 
-	// Sort events by duration (multi-day events first)
-	const sortedEvents = [...events].sort((a, b) => {
-		const aIsSingleDay = !a.endDate || a.startDate === a.endDate;
-		const bIsSingleDay = !b.endDate || b.startDate === b.endDate;
-		if (aIsSingleDay && !bIsSingleDay) return 1;
-		if (!aIsSingleDay && bIsSingleDay) return -1;
-		return 0;
-	});
+	// Use enhanced sorting with priority order: short-multiday → long-multiday → single-day
+	const sortedEvents = sortEventsByPriority(events);
 
 	console.log('🎨 RENDERING EVENTS ON CALENDAR');
 	console.log('📊 Total events to render:', sortedEvents.length);
 	console.log('📊 Current date being rendered:', date.toISOString().split('T')[0]);
 	console.log('📊 Current month/year:', date.getFullYear(), date.getMonth() + 1);
 
-	// Render multi-day events first
+	// Enhanced Event Rendering with Advanced Positioning
 	sortedEvents.forEach((event, index) => {
 		console.log(`📅 Processing event ${index + 1}:`, {
 			id: event.id,
 			title: event.title,
 			startDate: event.startDate,
 			endDate: event.endDate,
+			category: categorizeEventDuration(event),
 			workspaceId: event.workspaceId,
 			shared: event.shared
 		});
 
 		if (!event.endDate || event.startDate === event.endDate) {
+			// Single-day event rendering with enhanced positioning
 			console.log(`🔍 Looking for day element with date: ${event.startDate}`);
 			const dayElement = grid.querySelector(`[data-date="${event.startDate}"]`);
 			console.log(`✅ Day element found: ${dayElement ? 'YES' : 'NO'}`);
@@ -1111,97 +1311,18 @@ function generateCalendar(date) {
 						console.log(`⚠️ Event already exists on calendar, skipping: ${event.title}`);
 						return;
 					}
-	
-					const eventElement = document.createElement('div');
-					eventElement.className = `event-pill ${event.shared ? 'shared' : ''} ${event.attachmentUrl ? 'has-attachment' : ''}`;
-					eventElement.setAttribute('data-event-id', event.id);
 
-					// Use event-specific colors if available, otherwise fall back to default colors
-					const eventUserType = event.shared ? 'shared' : getEventTypeForUser(event);
-					const eventColor = event.color || getEventColor(eventUserType);
-					const borderColor = event.borderColor || getEventColor(eventUserType);
+					// Get all events for this day for collision detection
+					const dayEvents = getEventsForDate(event.startDate);
 
-					// Ensure colors are properly parsed and applied with strict validation
-					let finalEventColor = eventColor;
-					let finalBorderColor = borderColor;
+					// Use enhanced rendering with positioning
+					const eventElement = renderEventWithPositioning(event, dayEvents, dayElement);
 
-					console.log(`🎨 Processing event: "${event.title}" | shared: ${event.shared} | userType: ${eventUserType}`);
-					console.log(`🎨 Original colors - event: ${eventColor}, border: ${borderColor}`);
-					console.log(`🎨 Current eventColors in memory:`, window.eventColors);
+					// Store reference to this event for collision detection
+					dayEvents.push(event);
 
-					// Check if we have custom colors stored, otherwise use defaults
-					if (window.eventColors && window.eventColors[eventUserType]) {
-						finalEventColor = window.eventColors[eventUserType];
-						finalBorderColor = window.eventColors[eventUserType];
-						console.log(`✅ Using custom color for ${eventUserType}: ${finalEventColor}`);
-					} else {
-						finalEventColor = defaultEventColors[eventUserType] || eventColor;
-						finalBorderColor = defaultEventColors[eventUserType] || borderColor;
-						console.log(`⚠️ Using default color for ${eventUserType}: ${finalEventColor}`);
-					}
-
-					// Enhanced color validation with better CSS variable support and debug logging
-					const isValidColor = (color) => {
-						if (!color) return false;
-						const trimmed = color.trim();
-
-						// Check for hex colors (#RRGGBB or #RGB)
-						if (trimmed.match(/^#([0-9A-F]{3}|[0-9A-F]{6})$/i)) return true;
-
-						// Check for rgb/rgba colors
-						if (trimmed.startsWith('rgb') || trimmed.startsWith('rgba')) return true;
-
-						// Check for CSS variables (must start with 'var(' and end with ')')
-						if (trimmed.startsWith('var(') && trimmed.endsWith(')')) return true;
-
-						// Check for HSL colors
-						if (trimmed.startsWith('hsl') || trimmed.startsWith('hsla')) return true;
-
-						// Check for named colors (basic validation)
-						if (trimmed.match(/^[a-z]+$/i)) return true;
-
-						return false;
-					};
-
-					// Validate and fix finalEventColor
-					if (!isValidColor(finalEventColor)) {
-						console.warn(`🎨 Invalid event color detected: "${finalEventColor}", using fallback`);
-						finalEventColor = defaultEventColors[eventUserType] || '#667eea';
-						console.log(`🔧 Applied fallback event color: ${finalEventColor}`);
-					}
-
-					// Validate and fix finalBorderColor (FIXED: was missing validation)
-					if (!isValidColor(finalBorderColor)) {
-						console.warn(`🎨 Invalid border color detected: "${finalBorderColor}", using fallback`);
-						finalBorderColor = defaultEventColors[eventUserType] || '#667eea';
-						console.log(`🔧 Applied fallback border color: ${finalBorderColor}`);
-					}
-
-					eventElement.setAttribute('style', `position: relative; z-index: 2; ${eventUserType === 'shared' ? '/* background gradient handled by CSS */' : `background: ${finalEventColor};`} border-left: 4px solid ${finalBorderColor}; border-radius: 4px;`);
-					eventElement.textContent = event.title || 'Untitled Event';
-
-					// Add data attribute for debugging
-					eventElement.setAttribute('data-event-type', eventUserType);
-					eventElement.setAttribute('data-color-used', finalEventColor);
-
-					console.log(`🎯 Final event styling - ${eventUserType}: bg=${finalEventColor}, border=${finalBorderColor}`);
-	
-					// Add click handler
-					eventElement.addEventListener('click', (e) => {
-						e.stopPropagation();
-						console.log(`🎯 Event clicked: ${event.id}`);
-						openEventDetails(event.id);
-					});
-	
 					eventsContainer.appendChild(eventElement);
-					console.log(`✅ Event element appended to calendar successfully for: "${event.title}"`);
-					console.log(`📍 Event container details:`, {
-						container: eventsContainer,
-						parentDay: dayElement,
-						eventElement: eventElement,
-						containerChildren: eventsContainer.children.length,
-						eventElementInDOM: document.body.contains(eventElement)
-					});
+					console.log(`✅ Enhanced event element appended to calendar for: "${event.title}"`);
 
 					// Add has-events class to day element
 					dayElement.classList.add('has-events');
@@ -1212,178 +1333,157 @@ function generateCalendar(date) {
 				}
 			} else {
 				console.log(`❌ No day element found for date: ${event.startDate}`);
-				// Let's see what dates are available in the calendar
-				const allDayElements = grid.querySelectorAll('[data-date]');
-				console.log(`📋 Available dates in calendar (${allDayElements.length} days):`);
-				allDayElements.forEach((el, index) => {
-					console.log(`  ${index + 1}: ${el.dataset.date}`);
-				});
 			}
 		} else {
-			console.log(`🔗 Skipping multi-day event: ${event.title} (${event.startDate} to ${event.endDate})`);
+			console.log(`🔗 Processing multi-day event: ${event.title} (${event.startDate} to ${event.endDate})`);
+			// Multi-day events will be handled in the next section
 		}
 	});
 
-	// Render multi-day events
-	events
-		.filter((event) => event.endDate && event.startDate !== event.endDate)
-		.forEach((event) => {
-			console.log(`🔗 Processing multi-day event: ${event.title} (${event.startDate} to ${event.endDate})`);
-			const startDate = new Date(event.startDate);
-			const endDate = new Date(event.endDate);
+	// Enhanced Multi-day Event Rendering with Advanced Positioning
+	const multiDayEvents = sortedEvents.filter((event) => event.endDate && event.startDate !== event.endDate);
 
-			const currentDate = new Date(startDate);
-			let currentWeekSpan = null;
-			let lastWeekIndex = -1;
+	multiDayEvents.forEach((event) => {
+		console.log(`🔗 Processing enhanced multi-day event: ${event.title} (${event.startDate} to ${event.endDate})`);
+		const startDate = new Date(event.startDate);
+		const endDate = new Date(event.endDate);
+		const eventCategory = categorizeEventDuration(event);
 
-			while (currentDate <= endDate) {
-				const dateStr = currentDate.toISOString().split('T')[0];
-				const dayElement = grid.querySelector(`[data-date="${dateStr}"]`);
+		const currentDate = new Date(startDate);
+		let currentWeekSpan = null;
+		let lastWeekIndex = -1;
+		let spanStartDay = -1;
+		let spanTop = -1;
 
-				if (dayElement) {
-					const dayIndex = Array.from(grid.children).indexOf(dayElement) - 7; // Subtract header row
-					const weekIndex = Math.floor(dayIndex / 7);
-					const dayInWeek = dayIndex % 7;
+		while (currentDate <= endDate) {
+			const dateStr = currentDate.toISOString().split('T')[0];
+			const dayElement = grid.querySelector(`[data-date="${dateStr}"]`);
 
-					// If we're in a new week or this is the first day
-					if (weekIndex !== lastWeekIndex) {
-						if (currentWeekSpan) {
-							const weekEnd = lastWeekIndex * 7 + 6;
-							const spanEnd = Math.min(weekEnd, currentWeekSpan._lastDayIndex);
-							const spanStart = (lastWeekIndex * 7) + (currentWeekSpan._startDay % 7);
-							const width = ((spanEnd - spanStart + 1) * 14.28);
-							currentWeekSpan.style.width = `${width}%`;
-						}
+			if (dayElement) {
+				const dayIndex = Array.from(grid.children).indexOf(dayElement) - 7; // Subtract header row
+				const weekIndex = Math.floor(dayIndex / 7);
+				const dayInWeek = dayIndex % 7;
 
-						// Start new span for this week
-						currentWeekSpan = document.createElement('div');
-						currentWeekSpan.className = `event-span ${event.shared ? 'shared' : ''} ${dateStr === event.startDate ? 'start' : ''}`;
+				// Get events for this day for collision detection
+				const dayEvents = getEventsForDate(dateStr);
 
-						// Get the grid's dimensions
-						const dayRect = dayElement.getBoundingClientRect();
-						const gridRect = grid.getBoundingClientRect();
-						const cellHeight = dayRect.height;
-
-						// Get the dynamic color for the event based on event-specific colors or custom colors
-						const eventUserType = event.shared ? 'shared' : getEventTypeForUser(event);
-						const eventColor = event.color || getEventColor(eventUserType);
-						const borderColor = event.borderColor || getEventColor(eventUserType);
-
-						console.log(`🔗 Processing multi-day event: "${event.title}" | shared: ${event.shared} | userType: ${eventUserType}`);
-						console.log(`🔗 Original colors - event: ${eventColor}, border: ${borderColor}`);
-
-						// Get validated colors for multi-day events
-						let useEventColor = eventColor;
-						let useBorderColor = borderColor;
-
-						if (window.eventColors && window.eventColors[eventUserType]) {
-							useEventColor = window.eventColors[eventUserType];
-							useBorderColor = window.eventColors[eventUserType];
-							console.log(`✅ Using custom multi-day color for ${eventUserType}: ${useEventColor}`);
-						} else {
-							useEventColor = defaultEventColors[eventUserType] || eventColor;
-							useBorderColor = defaultEventColors[eventUserType] || borderColor;
-							console.log(`⚠️ Using default multi-day color for ${eventUserType}: ${useEventColor}`);
-						}
-
-						// Enhanced color validation for multi-day events
-						const isValidColorMultiDay = (color) => {
-							if (!color) return false;
-							const trimmed = color.trim();
-
-							// Check for hex colors (#RRGGBB or #RGB)
-							if (trimmed.match(/^#([0-9A-F]{3}|[0-9A-F]{6})$/i)) return true;
-
-							// Check for rgb/rgba colors
-							if (trimmed.startsWith('rgb') || trimmed.startsWith('rgba')) return true;
-
-							// Check for CSS variables (must start with 'var(' and end with ')')
-							if (trimmed.startsWith('var(') && trimmed.endsWith(')')) return true;
-
-							// Check for HSL colors
-							if (trimmed.startsWith('hsl') || trimmed.startsWith('hsla')) return true;
-
-							// Check for named colors (basic validation)
-							if (trimmed.match(/^[a-z]+$/i)) return true;
-
-							return false;
-						};
-
-						if (!isValidColorMultiDay(useEventColor)) {
-							console.warn(`🎨 Invalid multi-day event color detected: "${useEventColor}", using fallback`);
-							useEventColor = defaultEventColors[eventUserType] || '#667eea';
-						}
-						if (!isValidColorMultiDay(useBorderColor)) {
-							console.warn(`🎨 Invalid multi-day border color detected: "${useBorderColor}", using fallback`);
-							useBorderColor = defaultEventColors[eventUserType] || '#667eea';
-						}
-
-						console.log(`🔗 Final multi-day colors - ${eventUserType}: bg=${useEventColor}, border=${useBorderColor}`);
-
-						// Create positioning styles
-						const styles = {
-							position: 'absolute',
-							left: `${dayInWeek * 14.28}%`,
-							width: '14.28%', // Initial width of one day
-							top: `${(weekIndex * cellHeight) + 8}px`, // Position at top of cell
-							height: '20px',
-							background: event.color ? event.color : `linear-gradient(135deg, ${useEventColor}, ${useEventColor}99)`,
-							padding: '2px 6px',
-							fontSize: '0.8rem',
-							borderRadius: '4px',
-							border: event.borderColor ? `1px solid ${event.borderColor}` : `1px solid ${useBorderColor}99`,
-							boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-							cursor: 'pointer',
-							zIndex: '2', // Higher z-index to be above day cells
-							color: '#FFFFFF',
-							whiteSpace: 'nowrap',
-							overflow: 'hidden',
-							textOverflow: 'ellipsis',
-							transition: 'all 0.2s ease'
-						};
-
-						// Apply styles
-						Object.assign(currentWeekSpan.style, styles);
-						
-						currentWeekSpan.textContent = event.title;
-						currentWeekSpan.onclick = () => openEventDetails(event.id);
-						currentWeekSpan._startDay = dayIndex;
-						currentWeekSpan._lastDayIndex = dayIndex;
-
-						// Add hover effect
-						currentWeekSpan.onmouseenter = function() {
-							this.style.transform = 'translateY(-2px)';
-							this.style.boxShadow = '0 4px 8px rgba(0,0,0,0.2)';
-						};
-						currentWeekSpan.onmouseleave = function() {
-							this.style.transform = 'translateY(0)';
-							this.style.boxShadow = '0 2px 4px rgba(0,0,0,0.1)';
-						};
-						
-						// Append to the grid
-						grid.appendChild(currentWeekSpan);
-
-						lastWeekIndex = weekIndex;
-					} else if (currentWeekSpan) {
-						// Update the last day index as we move through the week
-						currentWeekSpan._lastDayIndex = dayIndex;
+				// If we're in a new week or this is the first day
+				if (weekIndex !== lastWeekIndex) {
+					if (currentWeekSpan) {
+						// Finalize the previous week's span
+						const weekEnd = lastWeekIndex * 7 + 6;
+						const spanEnd = Math.min(weekEnd, currentWeekSpan._lastDayIndex);
+						const spanStart = (lastWeekIndex * 7) + (currentWeekSpan._startDay % 7);
+						const width = ((spanEnd - spanStart + 1) * 14.28);
+						currentWeekSpan.style.width = `${width}%`;
 					}
-				}
 
-				// Move to next day
-				currentDate.setDate(currentDate.getDate() + 1);
+					// Start new span for this week with enhanced positioning
+					currentWeekSpan = document.createElement('div');
+					currentWeekSpan.className = `event-span enhanced-multiday ${event.shared ? 'shared' : ''} ${eventCategory} ${dateStr === event.startDate ? 'start' : ''}`;
 
-				// If this was the last day, finish the current span
-				if (currentWeekSpan && (dateStr === event.endDate || currentDate > endDate)) {
-					const weekEnd = lastWeekIndex * 7 + 6;
-					const spanEnd = Math.min(weekEnd, currentWeekSpan._lastDayIndex);
-					const spanStart = (lastWeekIndex * 7) + (currentWeekSpan._startDay % 7);
-					const width = ((spanEnd - spanStart + 1) * 14.28);
-					currentWeekSpan.style.width = `${width}%`;
-					if (dateStr === event.endDate) currentWeekSpan.classList.add('end');
+					// Get the grid's dimensions
+					const dayRect = dayElement.getBoundingClientRect();
+					const gridRect = grid.getBoundingClientRect();
+					const cellHeight = dayRect.height;
+
+					// Enhanced positioning with collision detection
+					const position = calculateEventPosition(event, dayEvents, dayElement);
+					const topPosition = position.top;
+
+					// Get the dynamic color for the event
+					const eventUserType = event.shared ? 'shared' : getEventTypeForUser(event);
+					const eventColor = event.color || getEventColor(eventUserType);
+					const borderColor = event.borderColor || getEventColor(eventUserType);
+
+					// Enhanced multi-day styling with proper CSS variable handling
+					let backgroundStyle;
+					if (eventUserType === 'shared') {
+						// For shared events, check if using CSS variable or hex color
+						if (eventColor.startsWith('var(')) {
+							// CSS variables don't support hex modification, use directly
+							backgroundStyle = eventColor;
+						} else {
+							// Apply HSLA conversion for hex colors
+							const baseColor = hexToHsla(eventColor);
+							backgroundStyle = `linear-gradient(135deg, ${baseColor.replace('hsl', 'hsla').replace(')', ', 0.9)')} 0%, ${baseColor.replace('hsl', 'hsla').replace(')', ', 0.7)')} 70%, ${baseColor.replace('hsl', 'hsla').replace(')', ', 0.6)')} 100%)`;
+						}
+					} else {
+						// Personal events: Apply HSLA conversion for hex colors
+						const baseColor = hexToHsla(eventColor);
+						backgroundStyle = `linear-gradient(135deg, ${baseColor} 0%, ${baseColor.replace('hsl', 'hsla').replace(')', ', 0.85)')} 100%)`;
+					}
+
+					const styles = {
+						position: 'absolute',
+						left: `${dayInWeek * 14.28}%`,
+						width: '14.28%', // Initial width of one day
+						top: `${(weekIndex * cellHeight) + topPosition}px`,
+						height: position.height + 'px',
+						background: backgroundStyle,
+						padding: '2px 6px',
+						fontSize: '0.75rem',
+						borderRadius: '6px',
+						border: `1px solid ${borderColor}99`,
+						borderLeft: eventCategory === 'short-multiday' ? `3px solid ${borderColor}` : `3px solid ${borderColor}`,
+						boxShadow: `0 2px 6px ${borderColor}33, inset 0 1px 0 rgba(255, 255, 255, 0.2)`,
+						cursor: 'pointer',
+						zIndex: '3', // Higher z-index for multi-day events
+						color: '#FFFFFF',
+						whiteSpace: 'nowrap',
+						overflow: 'hidden',
+						textOverflow: 'ellipsis',
+						transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+						fontWeight: eventCategory === 'long-multiday' ? '600' : '500'
+					};
+
+					// Apply styles
+					Object.assign(currentWeekSpan.style, styles);
+
+					currentWeekSpan.textContent = event.title;
+					currentWeekSpan.onclick = () => openEventDetails(event.id);
+					currentWeekSpan._startDay = dayIndex;
+					currentWeekSpan._lastDayIndex = dayIndex;
+
+					// Enhanced hover effects for multi-day events
+					currentWeekSpan.onmouseenter = function() {
+						this.style.transform = 'translateY(-3px) scale(1.02)';
+						this.style.boxShadow = `0 6px 16px ${borderColor}44, inset 0 1px 0 rgba(255, 255, 255, 0.3)`;
+						this.style.zIndex = '10';
+					};
+					currentWeekSpan.onmouseleave = function() {
+						this.style.transform = 'translateY(0) scale(1)';
+						this.style.boxShadow = `0 2px 6px ${borderColor}33, inset 0 1px 0 rgba(255, 255, 255, 0.2)`;
+						this.style.zIndex = '3';
+					};
+
+					// Append to the grid
+					grid.appendChild(currentWeekSpan);
+
+					lastWeekIndex = weekIndex;
+				} else if (currentWeekSpan) {
+					// Update the last day index as we move through the week
+					currentWeekSpan._lastDayIndex = dayIndex;
 				}
 			}
-		});
+
+			// Move to next day
+			currentDate.setDate(currentDate.getDate() + 1);
+
+			// If this was the last day, finish the current span
+			if (currentWeekSpan && (dateStr === event.endDate || currentDate > endDate)) {
+				const weekEnd = lastWeekIndex * 7 + 6;
+				const spanEnd = Math.min(weekEnd, currentWeekSpan._lastDayIndex);
+				const spanStart = (lastWeekIndex * 7) + (currentWeekSpan._startDay % 7);
+				const width = ((spanEnd - spanStart + 1) * 14.28);
+				currentWeekSpan.style.width = `${width}%`;
+
+				if (dateStr === event.endDate) {
+					currentWeekSpan.classList.add('end');
+				}
+			}
+		}
+	});
 }
 
 function changeMonth(direction) {

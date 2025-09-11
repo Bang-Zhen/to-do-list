@@ -982,13 +982,92 @@ body {
 }
 
 .event-pill:hover {
-	background: rgba(255, 255, 255, 0.4);
-	transform: translateX(2px);
-	box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    transform: translateX(2px);
+    background: rgba(255, 255, 255, 0.4);
+    border-color: rgba(255, 255, 255, 0.5);
+    box-shadow: 
+        0 4px 16px rgba(0, 0, 0, 0.2),
+        0 2px 6px rgba(0, 0, 0, 0.15),
+        inset 0 1px 0 rgba(255, 255, 255, 0.3);
+    z-index: 10;
+}
+
+/* Category-specific styling for multiday events */
+.event-pill.short-multiday {
+	background: linear-gradient(135deg, rgba(52, 152, 219, 0.8), rgba(41, 128, 185, 0.9));
+	border: 1px solid rgba(52, 152, 219, 0.4);
+	box-shadow: 0 2px 8px rgba(52, 152, 219, 0.2);
+}
+
+.event-pill.long-multiday {
+	background: linear-gradient(135deg, rgba(155, 89, 182, 0.8), rgba(142, 68, 173, 0.9));
+	border: 1px solid rgba(155, 89, 182, 0.4);
+	box-shadow: 0 2px 8px rgba(155, 89, 182, 0.2);
+}
+
+.event-pill.single-day {
+	background: linear-gradient(135deg, rgba(46, 204, 113, 0.8), rgba(39, 174, 96, 0.9));
+	border: 1px solid rgba(46, 204, 113, 0.4);
+	box-shadow: 0 2px 8px rgba(46, 204, 113, 0.2);
 }
 
 .event-pill.shared {
 	background: var(--primary-gradient) !important;
+}
+
+/* Enhanced hover effects for different event categories */
+.event-pill.short-multiday:hover {
+	background: linear-gradient(135deg, rgba(52, 152, 219, 0.9), rgba(41, 128, 185, 1));
+	transform: translateX(3px) translateY(-1px);
+	box-shadow: 0 4px 16px rgba(52, 152, 219, 0.3);
+}
+
+.event-pill.long-multiday:hover {
+	background: linear-gradient(135deg, rgba(155, 89, 182, 0.9), rgba(142, 68, 173, 1));
+	transform: translateX(3px) translateY(-1px);
+	box-shadow: 0 4px 16px rgba(155, 89, 182, 0.3);
+}
+
+.event-pill.single-day:hover {
+	background: linear-gradient(135deg, rgba(46, 204, 113, 0.9), rgba(39, 174, 96, 1));
+	transform: translateX(3px) translateY(-1px);
+	box-shadow: 0 4px 16px rgba(46, 204, 113, 0.3);
+}
+
+/* Scrollable events container for overflow handling */
+.scrollable-events {
+	max-height: 80px;
+	overflow-y: auto;
+	scrollbar-width: thin;
+	scrollbar-color: rgba(255, 255, 255, 0.3) transparent;
+}
+
+.scrollable-events::-webkit-scrollbar {
+	width: 4px;
+}
+
+.scrollable-events::-webkit-scrollbar-track {
+	background: transparent;
+}
+
+.scrollable-events::-webkit-scrollbar-thumb {
+	background: rgba(255, 255, 255, 0.3);
+	border-radius: 2px;
+}
+
+.scrollable-events::-webkit-scrollbar-thumb:hover {
+	background: rgba(255, 255, 255, 0.5);
+}
+
+/* Smooth animations for event positioning */
+.event-pill.positioning {
+	transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+	will-change: transform;
+}
+
+.event-pill.positioned {
+	transform: translateY(var(--event-offset, 0));
+	transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .event-pill.has-attachment::after {
