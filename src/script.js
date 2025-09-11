@@ -1760,7 +1760,7 @@ function openEventModal(selectedDate = null, isNewEvent = false, isShared = true
                                 <div class="event-item-content">
                                     <div class="event-item-header">
                                         <h4>${event.title}</h4>
-                                        ${event.shared ? '<span class="shared-tag">💑 Together</span>' : '<span class="personal-tag">📝 Personal</span>'}
+                                        ${event.shared ? `<span class="shared-tag event-type-toggle" data-event-id="${event.id}" onclick="event.stopPropagation(); toggleEventType('${event.id}')" style="cursor: pointer;">💑 Together</span>` : `<span class="personal-tag event-type-toggle" data-event-id="${event.id}" onclick="event.stopPropagation(); toggleEventType('${event.id}')" style="cursor: pointer;">📝 Personal</span>`}
                                     </div>
                                     <div class="event-item-details">
                                         ${event.time ? `<span class="detail-item">⏰ ${event.time}</span>` : ''}
@@ -2150,7 +2150,7 @@ function openDayEventsModal(selectedDate) {
                                 <div class="event-item-content">
                                     <div class="event-item-header">
                                         <h4>${event.title}</h4>
-                                        ${event.shared ? '<span class="shared-tag">💑 Together</span>' : '<span class="personal-tag">📝 Personal</span>'}
+                                        ${event.shared ? `<span class="shared-tag event-type-toggle" data-event-id="${event.id}" onclick="event.stopPropagation(); toggleEventType('${event.id}')" style="cursor: pointer;">💑 Together</span>` : `<span class="personal-tag event-type-toggle" data-event-id="${event.id}" onclick="event.stopPropagation(); toggleEventType('${event.id}')" style="cursor: pointer;">📝 Personal</span>`}
                                     </div>
                                     <div class="event-item-details">
                                         ${event.time ? `<span class="detail-item">⏰ ${event.time}</span>` : ''}
@@ -2275,8 +2275,10 @@ function openDayEventsModal(selectedDate) {
             color: white;
         }
         .personal-tag {
-            background: rgba(0, 0, 0, 0.05);
-            color: var(--text-secondary);
+            background: #FFFACD;
+            color: #8B4513;
+            border: 1px solid #F0E68C;
+            font-weight: 500;
         }
         .event-item-notes {
             margin-top: 8px;
@@ -4425,7 +4427,8 @@ function updateAllEventColors() {
         closeEventColorPicker,
         openEventColorPicker,
         deleteEvent,
-        openEventDetails
+        openEventDetails,
+        toggleEventType
     };
 
     // Enhanced exposure with backup and overwrite protection
@@ -4493,6 +4496,104 @@ function testSharedColorCustomization() {
 	console.log('✅ Shared color in memory:', !!eventColors.shared);
 
 	showNotification('🔍 Color test completed! Check console for details.', 'info');
+}
+// Add newline for separation
+// Event Type Toggle Functionality
+async function toggleEventType(eventId) {
+    console.log('🔄 toggleEventType called with eventId:', eventId);
+
+    if (!eventId) {
+        console.error('❌ No eventId provided to toggleEventType');
+        return;
+    }
+
+    try {
+        // Find the event in the global events array
+        const eventIndex = events.findIndex(event => event.id === eventId);
+        if (eventIndex === -1) {
+            console.error('❌ Event not found in events array:', eventId);
+            return;
+        }
+
+        const event = events[eventIndex];
+        const wasShared = event.shared;
+        const newShared = !wasShared;
+
+        console.log(`🔄 Toggling event "${event.title}": ${wasShared ? 'Shared → Personal' : 'Personal → Shared'}`);
+
+        // Immediate visual update - find the badge element
+        const badgeElement = document.querySelector(`.shared-tag[data-event-id="${eventId}"], .personal-tag[data-event-id="${eventId}"]`);
+
+        console.log('🔍 Looking for badge element with selector:', `.shared-tag[data-event-id="${eventId}"], .personal-tag[data-event-id="${eventId}"]`);
+        console.log('🔍 Badge element found:', !!badgeElement);
+
+        if (badgeElement) {
+            console.log('🔍 Badge element details:', {
+                tagName: badgeElement.tagName,
+                className: badgeElement.className,
+                dataEventId: badgeElement.dataset.eventId,
+                textContent: badgeElement.textContent
+            });
+            // Add transition class for smooth animation
+            badgeElement.classList.add('tag-transitioning');
+            badgeElement.style.transition = 'all 0.3s ease';
+
+            // Update the badge content immediately
+            if (newShared) {
+                badgeElement.className = 'shared-tag';
+                badgeElement.textContent = '💑 Together';
+                badgeElement.style.background = 'var(--secondary-gradient)';
+            } else {
+                badgeElement.className = 'personal-tag';
+                badgeElement.textContent = '📝 Personal';
+                badgeElement.style.background = '#FFFACD';
+                badgeElement.style.color = '#8B4513';
+                badgeElement.style.border = '1px solid #F0E68C';
+            }
+
+            // Remove transition class after animation
+            setTimeout(() => {
+                if (badgeElement) {
+                    badgeElement.classList.remove('tag-transitioning');
+                    console.log('🎨 Badge color verified:', {
+                        isPersonal: badgeElement.classList.contains('personal-tag'),
+                        isShared: badgeElement.classList.contains('shared-tag'),
+                        backgroundColor: badgeElement.style.background,
+                        textColor: badgeElement.style.color,
+                        computedColor: getComputedStyle(badgeElement).color,
+                        border: badgeElement.style.border
+                    });
+                }
+            }, 300);
+        } else {
+            console.warn('⚠️ Badge element not found for immediate update');
+        }
+
+        // Update event in database
+        console.log('🔧 Updating event in database...');
+        await updateDoc(doc(db, 'events', eventId), {
+            shared: newShared,
+            updatedAt: serverTimestamp()
+        });
+
+        // Update local events array
+        events[eventIndex].shared = newShared;
+        console.log('✅ Event shared status updated in local array');
+
+        // Show notification
+        const eventType = newShared ? 'Together' : 'Personal';
+        showNotification(`✨ Event changed to "${eventType}"`, 'success');
+
+        // Regenerate calendar to reflect color changes
+        console.log('🔄 Regenerating calendar with updated event type');
+        setTimeout(() => {
+            generateCalendar(currentDate);
+        }, 100);
+
+    } catch (error) {
+        console.error('❌ Error toggling event type:', error);
+        showNotification('Error updating event type', 'error');
+    }
 }
 
 // Workspace Title Editing Functionality
