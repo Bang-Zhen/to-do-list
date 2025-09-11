@@ -558,6 +558,42 @@ body {
 	font-size: 14px;
 }
 
+.workspace-title-container {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	position: relative;
+}
+
+.edit-workspace-btn {
+	background: transparent;
+	border: none;
+	color: var(--text-secondary);
+	cursor: pointer;
+	font-size: 16px;
+	padding: 4px;
+	border-radius: 6px;
+	transition: all 0.3s ease;
+	opacity: 0.6;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 24px;
+	height: 24px;
+	font-variant-emoji: emoji;
+	flex-shrink: 0;
+}
+
+.edit-workspace-btn:hover {
+	background: rgba(255, 255, 255, 0.1);
+	opacity: 1;
+	transform: scale(1.1);
+}
+
+.workspace-title-container:hover .edit-workspace-btn {
+	opacity: 0.8;
+}
+
 .header-right {
 	display: flex;
 	align-items: center;

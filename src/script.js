@@ -4494,3 +4494,167 @@ function testSharedColorCustomization() {
 
 	showNotification('🔍 Color test completed! Check console for details.', 'info');
 }
+
+// Workspace Title Editing Functionality
+function initializeWorkspaceTitleEditing() {
+	console.log('🔧 Initializing workspace title editing functionality');
+
+	const editBtn = document.getElementById('edit-workspace-name-btn');
+	const workspaceTitle = document.getElementById('workspace-title');
+	const workspaceContainer = document.querySelector('.workspace-title-container');
+
+	if (!editBtn || !workspaceTitle || !workspaceContainer) {
+		console.warn('⚠️ Necessary DOM elements not found for workspace editing');
+		return;
+	}
+
+	// Add click event to edit button
+	editBtn.addEventListener('click', startWorkspaceTitleEditing);
+
+	console.log('✅ Workspace title editing initialized');
+}
+
+function startWorkspaceTitleEditing() {
+	console.log('✏️ Starting workspace title editing');
+
+	const workspaceTitle = document.getElementById('workspace-title');
+	const editBtn = document.getElementById('edit-workspace-name-btn');
+	const workspaceContainer = document.querySelector('.workspace-title-container');
+
+	if (!workspaceTitle || !editBtn) return;
+
+	// Store original values
+	const originalHtml = workspaceTitle.innerHTML;
+	const originalText = workspaceTitle.textContent.trim();
+
+	// Hide edit button temporarily
+	editBtn.style.display = 'none';
+
+	// Create input element
+	const input = document.createElement('input');
+	input.type = 'text';
+	input.value = originalText;
+	input.className = 'workspace-edit-input';
+	input.style.cssText = `
+		font-family: var(--font-family-primary);
+		font-size: 2rem;
+		font-weight: 600;
+		color: var(--text-primary);
+		background: rgba(255, 255, 255, 0.1);
+		border: 2px solid var(--secondary-gradient);
+		border-radius: 8px;
+		padding: 4px 8px;
+		margin-bottom: 5px;
+		min-width: 200px;
+		transition: all 0.3s ease;
+	`;
+
+	input.focus();
+	input.select(); // Auto select all text
+
+	// Replace h1 with input
+	workspaceTitle.innerHTML = '';
+	workspaceTitle.appendChild(input);
+
+	// Handle save (Enter key or click outside)
+	function saveTitle(newTitle) {
+		const trimmedTitle = newTitle.trim();
+
+		if (!trimmedTitle) {
+			showNotification('Workspace name cannot be empty', 'error');
+			cancelEditing();
+			return;
+		}
+
+		if (trimmedTitle.length > 100) {
+			showNotification('Workspace name must be less than 100 characters', 'error');
+			cancelEditing();
+			return;
+		}
+
+		workspaceTitle.textContent = trimmedTitle;
+		editBtn.style.display = 'flex';
+		showNotification('Saving workspace name...', 'info');
+		updateWorkspaceName(trimmedTitle);
+	}
+
+	// Handle cancel (Escape key)
+	function cancelEditing() {
+		workspaceTitle.innerHTML = originalHtml;
+		editBtn.style.display = 'flex';
+		showNotification('Edit cancelled', 'info');
+	}
+
+	// Input event handlers
+	input.addEventListener('keydown', (e) => {
+		if (e.key === 'Enter') {
+			e.preventDefault();
+			saveTitle(input.value);
+		} else if (e.key === 'Escape') {
+			e.preventDefault();
+			cancelEditing();
+		}
+	});
+
+	input.addEventListener('blur', () => {
+		saveTitle(input.value);
+	});
+
+	// Prevent the workspace container from triggering other click events
+	workspaceContainer.addEventListener('click', (e) => {
+		e.stopPropagation();
+	});
+
+	console.log('✏️ Workspace title editing started');
+}
+
+async function updateWorkspaceName(newName) {
+	console.log('💾 Updating workspace name to:', newName);
+
+	try {
+		const userDoc = await getDoc(doc(db, 'users', $currentUser.get().uid));
+		const workspaceId = userDoc.data().workspaceId;
+
+		// Update workspace document
+		await updateDoc(doc(db, 'workspaces', workspaceId), {
+			name: newName,
+			updatedAt: serverTimestamp(),
+		});
+
+		// Update the UI immediately (already done in save function)
+		console.log('✅ Workspace name updated successfully');
+		showNotification('✨ Workspace name updated successfully!', 'success');
+
+	} catch (error) {
+		console.error('❌ Error updating workspace name:', error);
+		showNotification('Error updating workspace name', 'error');
+
+		// Restore original name on error
+		const workspaceTitle = document.getElementById('workspace-title');
+		if (workspaceTitle) {
+			const originalTitle = await getOriginalWorkspaceName();
+			workspaceTitle.textContent = originalTitle;
+		}
+	}
+}
+
+async function getOriginalWorkspaceName() {
+	try {
+		const userDoc = await getDoc(doc(db, 'users', $currentUser.get().uid));
+		const workspaceId = userDoc.data().workspaceId;
+
+		const workspaceDoc = await getDoc(doc(db, 'workspaces', workspaceId));
+		return workspaceDoc.data().name;
+	} catch (error) {
+		console.error('Error getting original workspace name:', error);
+		return 'Together'; // fallback
+	}
+}
+
+// Initialize workspace title editing when workspace loads
+document.addEventListener('DOMContentLoaded', () => {
+	// Wait for workspace to be loaded before initializing editing
+	setTimeout(() => {
+		initializeWorkspaceTitleEditing();
+	}, 1000); // Give time for workspace to load
+});
