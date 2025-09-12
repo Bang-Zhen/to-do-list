@@ -943,7 +943,50 @@ function sortEventsByPriority(events) {
 	});
 }
 
-// Advanced Event Positioning System with Collision Detection
+// Dynamic Event Sorting System with Enhanced Collision Prevention
+function sortEventsDynamically(events) {
+	console.log('🔄 sortEventsDynamically called with', events.length, 'events');
+
+	return [...events].sort((a, b) => {
+		// Primary sort: Date (earliest first)
+		const dateA = new Date(a.startDate);
+		const dateB = new Date(b.startDate);
+
+		if (dateA.getTime() !== dateB.getTime()) {
+			return dateA.getTime() - dateB.getTime();
+		}
+
+		// Secondary sort: Time (earliest first, if available)
+		const timeA = a.time || '00:00';
+		const timeB = b.time || '00:00';
+
+		if (timeA !== timeB) {
+			return timeA.localeCompare(timeB);
+		}
+
+		// Tertiary sort: Duration priority (short-multiday → long-multiday → single-day)
+		const categoryA = categorizeEventDuration(a);
+		const categoryB = categorizeEventDuration(b);
+
+		const priorityOrder = {
+			'short-multiday': 1,
+			'long-multiday': 2,
+			'single-day': 3
+		};
+
+		const priorityA = priorityOrder[categoryA] || 3;
+		const priorityB = priorityOrder[categoryB] || 3;
+
+		if (priorityA !== priorityB) {
+			return priorityA - priorityB;
+		}
+
+		// Final sort: Title alphabetically for consistent ordering
+		return a.title.localeCompare(b.title);
+	});
+}
+
+// Advanced Event Positioning System with Enhanced Collision Detection and Multi-Day Correction
 function calculateEventPosition(event, dayEvents, dayElement, maxVisibleEvents = 3) {
 	const dayRect = dayElement.getBoundingClientRect();
 	const eventCategory = categorizeEventDuration(event);
@@ -952,12 +995,13 @@ function calculateEventPosition(event, dayEvents, dayElement, maxVisibleEvents =
 	// Base positioning
 	let topOffset = 4; // Start below day number
 
-	// Shift multi-day events down by 22 pixels to correct positioning
+	// Enhanced multi-day event positioning with dual correction
 	if (isMultiDay) {
+		// Apply existing 79px row correction for proper vertical alignment
 		topOffset += 79;
 	}
 
-	let eventHeight = 22
+	const eventHeight = 22
 	let eventSpacing = 6;
 
 	// Check for existing events in this day
@@ -1151,7 +1195,7 @@ function generateCalendar(date) {
 		const style = document.createElement('style');
 		style.textContent = `
 			.calendar-day {
-				min-height: 120px;
+				min-height: 150px;
 				padding: 8px;
 				background: rgba(255, 255, 255, 0.03);
 				border-radius: 12px;
@@ -1279,8 +1323,8 @@ function generateCalendar(date) {
 		}
 	});
 
-	// Use enhanced sorting with priority order: short-multiday → long-multiday → single-day
-	const sortedEvents = sortEventsByPriority(events);
+	// Use enhanced dynamic sorting with date, time, and priority order: short-multiday → long-multiday → single-day
+	const sortedEvents = sortEventsDynamically(events);
 
 	console.log('🎨 RENDERING EVENTS ON CALENDAR');
 	console.log('📊 Total events to render:', sortedEvents.length);
@@ -2714,11 +2758,19 @@ document.getElementById('eventForm').addEventListener('submit', async (e) => {
 		closeModal('eventModal');
 		delete e.target.dataset.editingId;
 
-		// Wait a moment for the database to update
-		console.log('⏳ Waiting for database sync before regenerating calendar...');
+		// Apply dynamic sorting to ensure proper event ordering and positioning
+		console.log('🔄 Applying dynamic event sorting for optimal positioning...');
+		const sortedEvents = sortEventsDynamically(events);
+
+		// Update the global events array with sorted data
+		events = sortedEvents;
+		console.log('✅ Events sorted dynamically with', sortedEvents.length, 'events');
+
+		// Wait a moment for the database to update, then regenerate calendar with improved sorting
+		console.log('⏳ Waiting for database sync before regenerating calendar with enhanced sorting...');
 		setTimeout(() => {
-			console.log('🔄 Manual calendar regeneration triggered');
-			generateCalendar(currentDate); // Refresh the calendar
+			console.log('🔄 Manual calendar regeneration triggered with dynamic sorting');
+			generateCalendar(currentDate); // Refresh the calendar with improved positioning
 		}, 500);
 	} catch (error) {
 		console.error('❌ Error saving event:', error);
