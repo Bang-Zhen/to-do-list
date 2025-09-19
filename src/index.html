@@ -206,7 +206,7 @@
                         <div class="month-year" id="monthYear">January 2024</div>
                         <button class="nav-btn" onclick="changeMonth(1)">›</button>
                     </div>
-                    <button class="add-event-btn" onclick="console.log('Personal Event button clicked'); openEventModal();" data-tooltip="Add an event to your calendar">+ Add Event</button>
+                    <button class="add-event-btn" onclick="openModal('add-event-choice-modal');" data-tooltip="Add an event to your calendar">+ Add Event</button>
                 </div>
                 <div class="calendar-grid" id="calendarGrid">
                     <!-- Calendar will be generated here -->
@@ -544,6 +544,25 @@
                     </form>
                 </div>
             </div>
+        </div>
+        <!-- Add Event Choice Modal -->
+        <div id="add-event-choice-modal" class="modal add-event-choice-modal">
+            <div class="modal-content add-event-choice-content">
+                <div class="modal-header">
+                    <h3 class="modal-title">✨ What would you like to add? ✨</h3>
+                    <button class="close-btn" onclick="closeModal('add-event-choice-modal')">&times;</button>
+                </div>
+                <div class="choice-grid">
+                    <div class="choice-option personal-event" onclick="openEventModal(null, true, false)">
+                    <div class="choice-emoji">📝</div>
+                    <div class="choice-title">Personal Event</div>
+                    <div class="choice-description">Plan your own activities and reminders</div>
+                </div>
+                <div class="choice-option shared-memory" onclick="openEventModal(null, true, true)">
+                    <div class="choice-emoji">💝</div>
+                    <div class="choice-title">Create New Memory</div>
+                    <div class="choice-description">Capture special moments together</div>
+                </div>
         </div>
     </div>
 
