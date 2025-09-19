@@ -2615,20 +2615,68 @@ async function deleteEvent(eventId) {
 	}
 }
 
-function openTodoModal(assignee = null) {
+function openTodoModal(assignee = null, todoId = null) {
 	const assigneeSelect = document.getElementById('todoAssignee');
+	const todoTitle = document.getElementById('todoTitle');
+	const todoDueDate = document.getElementById('todoDueDate');
+	const todoNotes = document.getElementById('todoNotes');
+	const modalTitle = document.getElementById('todo-modal-title');
 
-	if (assignee) {
-		if (assignee === 'user1') {
-			assigneeSelect.value = 'user1'; // Set to "Me"
-		} else if (assignee === 'user2') {
-			assigneeSelect.value = 'user2'; // Set to "Partner"
-		} else if (assignee === 'shared') {
-			assigneeSelect.value = 'shared'; // Set to "Both (Shared)"
+	if (todoId) {
+		// Find the todo to edit
+		const todos = $todos.get();
+		const todo = todos.find((t) => t.id === todoId);
+		if (todo) {
+			// Pre-fill form fields for editing
+			todoTitle.value = todo.title;
+			todoDueDate.value = todo.dueDate || '';
+			todoNotes.value = todo.notes || '';
+
+			// Set assignee based on todo assignee
+			const currentUser = $currentUser.get();
+			if (todo.assignee === currentUser.uid) {
+				assigneeSelect.value = 'user1';
+			} else if (todo.assignee === 'shared') {
+				assigneeSelect.value = 'shared';
+			} else {
+				assigneeSelect.value = 'user2';
+			}
+
+			// Update modal title
+			if (modalTitle) {
+				modalTitle.textContent = '✏️ Edit Task';
+			}
+
+			// Store todo ID for updating
+			document.getElementById('todoForm').dataset.editingId = todoId;
 		}
 	} else {
-		// Default to current user if no specific assignee
-		assigneeSelect.value = 'user1';
+		// Clear form for new task creation
+		todoTitle.value = '';
+		todoDueDate.value = '';
+		todoNotes.value = '';
+
+		// Set assignee based on parameter
+		if (assignee) {
+			if (assignee === 'user1') {
+				assigneeSelect.value = 'user1'; // Set to "Me"
+			} else if (assignee === 'user2') {
+				assigneeSelect.value = 'user2'; // Set to "Partner"
+			} else if (assignee === 'shared') {
+				assigneeSelect.value = 'shared'; // Set to "Both (Shared)"
+			}
+		} else {
+			// Default to current user if no specific assignee
+			assigneeSelect.value = 'user1';
+		}
+
+		// Update modal title
+		if (modalTitle) {
+			modalTitle.textContent = '✨ Create New Task';
+		}
+
+		// Clear any editing ID
+		delete document.getElementById('todoForm').dataset.editingId;
 	}
 
 	openModal('todoModal');
@@ -2783,7 +2831,7 @@ document.getElementById('eventForm').addEventListener('submit', async (e) => {
 });
 
 // Todo Form Handler
-// addTodo
+// addTodo / updateTodo
 document.getElementById('todoForm').addEventListener('submit', async (e) => {
 	e.preventDefault();
 	const currentUser = $currentUser.get();
@@ -2811,50 +2859,64 @@ document.getElementById('todoForm').addEventListener('submit', async (e) => {
 		dueDate: document.getElementById('todoDueDate').value,
 		notes: document.getElementById('todoNotes').value,
 		assignee: assigneeValue,
-		completed: false,
 		workspaceId: currentWorkspace,
-		createdBy: currentUser.uid,
-		createdAt: serverTimestamp(),
+		updatedAt: serverTimestamp(),
 	};
+
+	const editingId = e.target.dataset.editingId;
 
 	try {
 		const button = e.target.querySelector('button[type="submit"]');
 		showButtonLoading(button, true);
 
-		const docRef = await addDoc(collection(db, 'todos'), todoData);
+		if (editingId) {
+			// Update existing todo
+			console.log('Updating existing todo:', editingId, todoData);
+			await updateDoc(doc(db, 'todos', editingId), todoData);
+			showNotification('Task updated! 🎉', 'success');
+		} else {
+			// Create new todo
+			todoData.completed = false;
+			todoData.createdBy = currentUser.uid;
+			todoData.createdAt = serverTimestamp();
 
-		// Create and animate the new task element
-		const todoElement = createTodoElement({ ...todoData, id: docRef.id });
-		todoElement.style.opacity = '0';
-		todoElement.style.transform = 'translateY(20px)';
+			const docRef = await addDoc(collection(db, 'todos'), todoData);
 
-		// Add to appropriate container based on current active tab
-		const activeTab = document.querySelector('.tab-btn.active');
-		if (activeTab) {
-			const activeTabText = activeTab.textContent.trim();
-			let targetContainer = null;
+			// Create and animate the new task element
+			const todoElement = createTodoElement({ ...todoData, id: docRef.id });
+			todoElement.style.opacity = '0';
+			todoElement.style.transform = 'translateY(20px)';
 
-			if (activeTabText.includes('My Tasks') && todoData.assignee === currentUser.uid) {
-				targetContainer = document.getElementById('my-tasks-container');
-			} else if (activeTabText.includes('Partner') && todoData.assignee !== currentUser.uid && todoData.assignee !== 'shared') {
-				targetContainer = document.getElementById('partner-tasks-container');
-			} else if (activeTabText.includes('Shared') && todoData.assignee === 'shared') {
-				targetContainer = document.getElementById('shared-tasks-container');
+			// Add to appropriate container based on current active tab
+			const activeTab = document.querySelector('.tab-btn.active');
+			if (activeTab) {
+				const activeTabText = activeTab.textContent.trim();
+				let targetContainer = null;
+
+				if (activeTabText.includes('My Tasks') && todoData.assignee === currentUser.uid) {
+					targetContainer = document.getElementById('my-tasks-container');
+				} else if (activeTabText.includes('Partner') && todoData.assignee !== currentUser.uid && todoData.assignee !== 'shared') {
+					targetContainer = document.getElementById('partner-tasks-container');
+				} else if (activeTabText.includes('Shared') && todoData.assignee === 'shared') {
+					targetContainer = document.getElementById('shared-tasks-container');
+				}
+
+				if (targetContainer) {
+					targetContainer.insertBefore(todoElement, targetContainer.firstChild);
+					// Trigger animation
+					requestAnimationFrame(() => {
+						todoElement.style.transition = 'all 0.3s ease';
+						todoElement.style.opacity = '1';
+						todoElement.style.transform = 'translateY(0)';
+					});
+				}
 			}
 
-			if (targetContainer) {
-				targetContainer.insertBefore(todoElement, targetContainer.firstChild);
-				// Trigger animation
-				requestAnimationFrame(() => {
-					todoElement.style.transition = 'all 0.3s ease';
-					todoElement.style.opacity = '1';
-					todoElement.style.transform = 'translateY(0)';
-				});
-			}
+			showNotification('Task created! 🎉', 'success');
 		}
 
-		showNotification('Task created! 🎉', 'success');
 		closeModal('todoModal');
+		delete e.target.dataset.editingId;
 
 		// Update progress bar for the active tab
 		const currentActiveTab = document.querySelector('.tab-btn.active');
@@ -2987,6 +3049,7 @@ function createTodoElement(todo) {
 	          ${dueDateHtml}
 	          ${attachmentHtml}
 	      </div>
+	      <button class="edit-todo-btn" type="button" data-todo-id="${todo.id}" title="Edit task">✏️</button>
 	      <button class="delete-todo-btn" type="button" data-todo-id="${todo.id}" title="Delete task">🗑️</button>
 	  `;
 
@@ -2997,15 +3060,16 @@ function createTodoElement(todo) {
 
 	// Add event listeners after the HTML is set
 	const checkbox = div.querySelector('.todo-checkbox');
+	const editBtn = div.querySelector('.edit-todo-btn');
 	const deleteBtn = div.querySelector('.delete-todo-btn');
 
 	console.log(
 		'Creating todo element for:',
 		todo.id,
+		'Edit button found:',
+		!!editBtn,
 		'Delete button found:',
-		!!deleteBtn,
-		'Delete button element:',
-		deleteBtn
+		!!deleteBtn
 	);
 
 	checkbox.addEventListener('click', (e) => {
@@ -3025,6 +3089,19 @@ function createTodoElement(todo) {
 
 		toggleTodo(todo.id);
 	});
+	if (editBtn) {
+		editBtn.addEventListener('click', (e) => {
+			console.log('✏️ EDIT BUTTON CLICKED for todo:', todo.id);
+			console.log('✏️ Event target:', e.target);
+			console.log('✏️ Event target classes:', e.target.classList);
+			console.log('✏️ Event target data-todo-id:', e.target.dataset.todoId);
+			e.stopPropagation();
+			e.preventDefault();
+			openTodoModal(null, todo.id);
+		});
+	} else {
+		console.error('❌ Edit button not found for todo:', todo.id);
+	}
 	if (deleteBtn) {
 		deleteBtn.addEventListener('click', (e) => {
 			console.log('🗑️ DELETE BUTTON CLICKED for todo:', todo.id);
