@@ -1907,10 +1907,17 @@ function openEventModal(selectedDate = null, isNewEvent = false, isShared = true
         return selectedDate >= startDate && selectedDate <= endDate;
     });
 
+    // Detect mobile screen size
+    const isMobile = window.innerWidth < 768;
+
     // Create events preview modal
     const modal = document.createElement('div');
     modal.className = 'modal';
     modal.id = 'daily-events-modal';
+    if (isMobile) {
+        modal.classList.add('add-event-choice-modal');
+        modal.classList.add('mobile-add-event-modal');
+    }
 
     const formattedDate = selectedDate ? new Date(selectedDate).toLocaleDateString('en-US', {
         weekday: 'long',
