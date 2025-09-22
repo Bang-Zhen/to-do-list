@@ -1878,6 +1878,171 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 	border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
+/* Custom Time Input Styling */
+input[type="time"] {
+	appearance: none;
+	-webkit-appearance: none;
+	background: rgba(255, 255, 255, 0.9);
+	padding: 14px 16px;
+	border: 2px solid rgba(0, 0, 0, 0.1);
+	border-radius: 12px;
+	font-family: var(--font-family-primary);
+	font-weight: var(--font-weight-semibold);
+	font-size: var(--font-size-lg);
+	letter-spacing: var(--letter-spacing-tight);
+	color: #333;
+	transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+	box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+	position: relative;
+	overflow: hidden;
+	cursor: pointer;
+}
+
+input[type="time"]::placeholder {
+	color: #9ca3af;
+	font-family: var(--font-family-primary);
+	font-weight: var(--font-weight-semibold);
+	font-size: var(--font-size-lg);
+	letter-spacing: var(--letter-spacing-tight);
+}
+
+input[type="time"]:focus {
+	outline: none;
+	border-color: var(--secondary-gradient);
+	background: white;
+	color: #333;
+	box-shadow: 0 0 0 3px rgba(78, 205, 196, 0.1), 0 4px 12px rgba(0, 0, 0, 0.1);
+	transform: translateY(-1px);
+}
+
+input[type="time"]:hover {
+	border-color: rgba(0, 0, 0, 0.15);
+	background: rgba(255, 255, 255, 0.95);
+	color: #333;
+}
+
+input[type="time"]::-webkit-calendar-picker-indicator {
+	position: absolute;
+	right: 10px;
+	top: 50%;
+	transform: translateY(-50%);
+	width: 20px;
+	height: 20px;
+	background: var(--secondary-gradient);
+	border-radius: 6px;
+	-webkit-mask:
+		url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'%3E%3Cpath d='M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67V7z'/%3E%3C/svg%3E")
+		center / contain;
+	mask:
+		url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'%3E%3Cpath d='M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67V7z'/%3E%3C/svg%3E")
+		center / contain;
+	cursor: pointer;
+	transition: all 0.3s ease;
+	opacity: 0.7;
+	backdrop-filter: blur(10px);
+	border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+input[type="time"]::-webkit-calendar-picker-indicator:hover {
+	opacity: 1;
+	transform: translateY(-50%) scale(1.15);
+	background: var(--primary-gradient);
+	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+/* Custom time picker styling for better theme integration */
+input[type="time"]::-webkit-datetime-edit {
+	color: #333;
+	font-family: inherit;
+	font-size: inherit;
+}
+
+input[type="time"]::-webkit-datetime-edit-fields-wrapper {
+	color: #333;
+}
+
+input[type="time"]::-webkit-datetime-edit-text {
+	color: #666;
+	padding: 0 2px;
+}
+
+input[type="time"]::-webkit-datetime-edit-hour-field,
+input[type="time"]::-webkit-datetime-edit-minute-field,
+input[type="time"]::-webkit-datetime-edit-ampm-field {
+	color: #333;
+	padding: 0 2px;
+}
+
+/* Time Input Container Styling */
+.time-input-group {
+	display: flex;
+	gap: 15px;
+	align-items: flex-start;
+}
+
+.time-input-group .form-group {
+	flex: 1;
+	margin-bottom: 20px;
+}
+
+.time-input-group .form-group label {
+	display: block;
+	margin-bottom: 8px;
+	color: #333;
+	font-family: var(--font-family-primary);
+	font-weight: var(--font-weight-semibold);
+	font-size: var(--font-size-sm);
+	letter-spacing: var(--letter-spacing-tight);
+}
+
+.time-input-group input[type="time"] {
+	width: 100%;
+}
+
+/* Enhanced Time Input Focus States */
+.time-input-group input[type="time"]:focus {
+	box-shadow: 0 0 0 3px rgba(78, 205, 196, 0.1), 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+/* Mobile Responsive Time Inputs */
+@media (max-width: 768px) {
+	.time-input-group {
+		flex-direction: column;
+		gap: 12px;
+	}
+
+	.time-input-group .form-group {
+		margin-bottom: 16px;
+	}
+
+	.time-input-group input[type="time"] {
+		padding: 12px 14px;
+		font-size: 16px; /* Prevents zoom on iOS */
+	}
+
+	.time-input-group input[type="time"]::-webkit-calendar-picker-indicator {
+		right: 8px;
+		width: 18px;
+		height: 18px;
+	}
+}
+
+@media (max-width: 480px) {
+	.time-input-group {
+		gap: 10px;
+	}
+
+	.time-input-group input[type="time"] {
+		padding: 10px 12px;
+	}
+
+	.time-input-group input[type="time"]::-webkit-calendar-picker-indicator {
+		right: 6px;
+		width: 16px;
+		height: 16px;
+	}
+}
+
 .checkbox-group {
 	display: flex;
 	align-items: center;

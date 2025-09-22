@@ -1855,7 +1855,8 @@ function openEventModal(selectedDate = null, isNewEvent = false, isShared = true
         const eventStartDate = document.getElementById('eventStartDate');
         const eventEndDate = document.getElementById('eventEndDate');
         const eventTitle = document.getElementById('eventTitle');
-        const eventTime = document.getElementById('eventTime');
+        const eventStartTime = document.getElementById('eventStartTime');
+        const eventEndTime = document.getElementById('eventEndTime');
         const eventLocation = document.getElementById('eventLocation');
         const eventNotes = document.getElementById('eventNotes');
         const modalTitle = document.getElementById('event-modal-title');
@@ -1863,7 +1864,8 @@ function openEventModal(selectedDate = null, isNewEvent = false, isShared = true
 
         // Clear form fields
         if (eventTitle) eventTitle.value = '';
-        if (eventTime) eventTime.value = '';
+        if (eventStartTime) eventStartTime.value = '';
+        if (eventEndTime) eventEndTime.value = '';
         if (eventLocation) eventLocation.value = '';
         if (eventNotes) eventNotes.value = '';
 
@@ -2234,7 +2236,8 @@ function openNewEventModal(selectedDate, isShared = true) {
     const eventStartDate = document.getElementById('eventStartDate');
     const eventEndDate = document.getElementById('eventEndDate');
     const eventTitle = document.getElementById('eventTitle');
-    const eventTime = document.getElementById('eventTime');
+    const eventStartTime = document.getElementById('eventStartTime');
+    const eventEndTime = document.getElementById('eventEndTime');
     const eventLocation = document.getElementById('eventLocation');
     const eventNotes = document.getElementById('eventNotes');
     const modalTitle = document.getElementById('event-modal-title');
@@ -2245,14 +2248,16 @@ function openNewEventModal(selectedDate, isShared = true) {
         eventStartDate: !!eventStartDate,
         eventEndDate: !!eventEndDate,
         eventTitle: !!eventTitle,
-        eventTime: !!eventTime,
+        eventStartTime: !!eventStartTime,
+        eventEndTime: !!eventEndTime,
         eventLocation: !!eventLocation,
         eventNotes: !!eventNotes
     });
 
     // Clear and set up form fields
     if (eventTitle) eventTitle.value = '';
-    if (eventTime) eventTime.value = '';
+    if (eventStartTime) eventStartTime.value = '';
+    if (eventEndTime) eventEndTime.value = '';
     if (eventLocation) eventLocation.value = '';
     if (eventNotes) eventNotes.value = '';
 
@@ -2696,7 +2701,8 @@ function openEventDetails(eventId) {
 		document.getElementById('eventTitle').value = event.title;
 		document.getElementById('eventStartDate').value = event.startDate;
 		document.getElementById('eventEndDate').value = event.endDate || event.startDate;
-		document.getElementById('eventTime').value = event.time || '';
+		document.getElementById('eventStartTime').value = event.startTime || '';
+		document.getElementById('eventEndTime').value = event.endTime || '';
 		document.getElementById('eventLocation').value = event.location || '';
 		document.getElementById('eventNotes').value = event.notes || '';
 
@@ -2737,7 +2743,8 @@ document.getElementById('eventForm').addEventListener('submit', async (e) => {
         title: document.getElementById('eventTitle').value,
         startDate: document.getElementById('eventStartDate').value,
         endDate: document.getElementById('eventEndDate').value,
-        time: document.getElementById('eventTime').value,
+        startTime: document.getElementById('eventStartTime').value,
+        endTime: document.getElementById('eventEndTime').value,
         location: document.getElementById('eventLocation').value,
         notes: document.getElementById('eventNotes').value
     });
@@ -2763,6 +2770,29 @@ document.getElementById('eventForm').addEventListener('submit', async (e) => {
             return;
         }
 
+        // Validate times
+        const startTime = document.getElementById('eventStartTime').value;
+        const endTime = document.getElementById('eventEndTime').value;
+
+        // Check if both times are provided or both are empty
+        if ((startTime && !endTime) || (!startTime && endTime)) {
+            showCustomNotification('Both start time and end time must be provided together', 'error');
+            showButtonLoading(button, false);
+            return;
+        }
+
+        // If both times are provided, validate that start time is before end time
+        if (startTime && endTime) {
+            const startDateTime = new Date(`${startDate}T${startTime}`);
+            const endDateTime = new Date(`${endDate}T${endTime}`);
+
+            if (startDateTime >= endDateTime) {
+                showCustomNotification('Start time must be before end time', 'error');
+                showButtonLoading(button, false);
+                return;
+            }
+        }
+
 		// Determine shared status based on modal data attribute
 		const eventModal = document.getElementById('eventModal');
 		const eventType = eventModal ? eventModal.getAttribute('data-event-type') : 'memory';
@@ -2772,7 +2802,8 @@ document.getElementById('eventForm').addEventListener('submit', async (e) => {
 			title: document.getElementById('eventTitle').value,
 			startDate: startDate,
 			endDate: endDate,
-			time: document.getElementById('eventTime').value,
+			startTime: document.getElementById('eventStartTime').value,
+			endTime: document.getElementById('eventEndTime').value,
 			location: document.getElementById('eventLocation').value,
 			notes: document.getElementById('eventNotes').value,
 			shared: isShared,
