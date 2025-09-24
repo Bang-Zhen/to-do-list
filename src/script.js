@@ -1931,7 +1931,7 @@ function openEventModal(selectedDate = null, isNewEvent = false, isShared = true
     const content = `
         <div class="modal-content daily-events-content">
             <div class="modal-header" style="border-bottom: 1px solid rgba(0, 0, 0, 0.1); padding-bottom: 15px; margin-bottom: 20px;">
-                <span class="selected-date" style="color: #333; font-size: 1.2rem; font-weight: 600; font-family: 'Space Grotesk', sans-serif;">${formattedDate}</span>
+                <span class="selected-date" style="color: #333; font-size: 1.2rem; font-weight: 600; font-family: var(--font-family-primary);">${formattedDate}</span>
                 <button class="close-btn" onclick="closeModal('daily-events-modal')">&times;</button>
             </div>
             <div class="events-content">
@@ -2321,7 +2321,7 @@ function openDayEventsModal(selectedDate) {
     const content = `
         <div class="modal-content daily-events-content" style="color: #333;">
             <div class="modal-header" style="border-bottom: 1px solid rgba(0, 0, 0, 0.1); padding-bottom: 15px; margin-bottom: 20px;">
-                <span class="selected-date" style="color: #333; font-size: 1.2rem; font-weight: 600; font-family: 'Space Grotesk', sans-serif;">${formattedDate}</span>
+                <span class="selected-date" style="color: #333; font-size: 1.2rem; font-weight: 600; font-family: var(--font-family-primary);">${formattedDate}</span>
                 <button class="close-btn" onclick="closeModal('daily-events-modal')">&times;</button>
             </div>
             <div class="events-content">
