@@ -2364,13 +2364,11 @@ function openDayEventsModal(selectedDate) {
             </div>
             <div class="modal-footer">
                 <div class="button-group">
-                    <button class="btn btn-secondary personal-event-btn" onclick="openEventModal('${selectedDate}', true, false)">
-                        <span>Personal Event</span>
-                        <span>📝</span>
+                    <button class="btn btn-primary personal-event-btn" onclick="openEventModal('${selectedDate}', true, false)">
+                        <span>Personal Event 📝</span>
                     </button>
                     <button class="btn btn-primary shared-memory-btn" onclick="openEventModal('${selectedDate}', true, true)">
-                        <span>Create New Memory</span>
-                        <span>💝</span>
+                        <span>Create New Memory 💝</span>
                     </button>
                 </div>
             </div>
