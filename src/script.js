@@ -1972,18 +1972,18 @@ function openEventModal(selectedDate = null, isNewEvent = false, isShared = true
                     </div>
                 `}
             </div>
-            <div class="modal-footer">
-                <div class="button-group">
-                    <button class="btn btn-secondary personal-event-btn" onclick="openEventModal('${selectedDate}', true, false)">
-                        <span>Personal Event</span>
-                        <span>📝</span>
-                    </button>
-                    <button class="btn btn-primary" onclick="openEventModal('${selectedDate}', true, true)">
-                        <span>Create New Memory</span>
-                        <span>💝</span>
-                    </button>
-                </div>
-            </div>
+			<div class="modal-footer">
+				<div class="button-group">
+					<button class="btn btn-secondary personal-event-btn" onclick="openEventModal('${selectedDate}', true, false)" style="background: linear-gradient(135deg, rgba(255, 235, 235, 0.9) 0%, rgba(255, 215, 215, 0.6) 100%) !important; border: 2px solid rgba(255, 107, 107, 0.4) !important; color: #333 !important; box-shadow: 0 4px 12px rgba(255, 107, 107, 0.15) !important;">
+						<span>Personal Event</span>
+						<span>📝</span>
+					</button>
+					<button class="btn btn-primary shared-memory-btn" onclick="openEventModal('${selectedDate}', true, true)" style="background: linear-gradient(135deg, rgba(245, 240, 255, 0.9) 0%, rgba(235, 220, 255, 0.6) 100%) !important; border: 2px solid rgba(139, 92, 246, 0.4) !important; color: #333 !important; box-shadow: 0 4px 12px rgba(139, 92, 246, 0.15) !important;">
+						<span>Create New Memory</span>
+						<span>💝</span>
+					</button>
+				</div>
+			</div>
         </div>
     `;
 
@@ -2368,7 +2368,7 @@ function openDayEventsModal(selectedDate) {
                         <span>Personal Event</span>
                         <span>📝</span>
                     </button>
-                    <button class="btn btn-primary" onclick="openEventModal('${selectedDate}', true, true)">
+                    <button class="btn btn-primary shared-memory-btn" onclick="openEventModal('${selectedDate}', true, true)">
                         <span>Create New Memory</span>
                         <span>💝</span>
                     </button>
