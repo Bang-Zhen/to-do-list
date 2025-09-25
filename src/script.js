@@ -1576,8 +1576,29 @@ function generateCalendar(date) {
 }
 
 function changeMonth(direction) {
-	currentDate.setMonth(currentDate.getMonth() + direction);
-	generateCalendar(currentDate);
+    const grid = document.getElementById('calendarGrid');
+
+    // Determine animation classes based on direction
+    const slideOutClass = direction > 0 ? 'sliding-out-left' : 'sliding-out-right';
+    const slideInClass = direction > 0 ? 'sliding-in-right' : 'sliding-in-left';
+
+    // Start slide-out animation
+    grid.classList.add(slideOutClass);
+
+    // After slide-out completes, update month and start slide-in
+    setTimeout(() => {
+        currentDate.setMonth(currentDate.getMonth() + direction);
+        generateCalendar(currentDate);
+
+        // Remove slide-out class and add slide-in class
+        grid.classList.remove(slideOutClass);
+        grid.classList.add(slideInClass);
+
+        // Clean up slide-in class after animation completes
+        setTimeout(() => {
+            grid.classList.remove(slideInClass);
+        }, 600); // Match animation duration (600ms for smoother feel)
+    }, 600); // Match animation duration (600ms for smoother feel)
 }
 
 // Function to clear all events from calendar
