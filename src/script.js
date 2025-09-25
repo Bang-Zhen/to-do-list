@@ -1034,7 +1034,7 @@ function calculateEventPosition(
   event,
   dayEvents,
   dayElement,
-  maxVisibleEvents = 3
+  maxVisibleEvents = 5
 ) {
   const dayRect = dayElement.getBoundingClientRect();
   const eventCategory = categorizeEventDuration(event);
@@ -1456,6 +1456,8 @@ function generateCalendar(date) {
       );
 
       // First pass: Render all multi-day events
+      const weekEventCounts = new Map();
+      // First pass: Render all multi-day events
       multiDayEvents.forEach((event) => {
         console.log(
           `🔗 Processing enhanced multi-day event: ${event.title} (${event.startDate} to ${event.endDate})`
@@ -1498,6 +1500,10 @@ function generateCalendar(date) {
                 const width = (spanEnd - spanStart + 1) * 14.28;
                 currentWeekSpan.style.width = `${width}%`;
               }
+
+              // Get current count for this week and increment it
+              const currentCount = weekEventCounts.get(weekIndex) || 0;
+              weekEventCounts.set(weekIndex, currentCount + 1);
 
               // Start new span for this week with enhanced positioning
               currentWeekSpan = document.createElement("div");
@@ -1556,7 +1562,7 @@ function generateCalendar(date) {
                 position: "absolute",
                 left: `${dayInWeek * 14.28}%`,
                 width: "14.28%", // Initial width of one day
-                top: `${weekIndex * cellHeight + 4 + 79}px`,
+                top: `${weekIndex * cellHeight + 4 + 79 + (currentCount * 25)}px`,
                 height: position.height + "px",
                 background: backgroundStyle,
                 padding: "2px 6px",
