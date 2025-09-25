@@ -729,21 +729,24 @@ async function loadWorkspace() {
 		showMainApp();
 		hideAuthModal();
 
-		// Wait for colors to be initialized before generating calendar
-		waitForColors().then(() => {
-			console.log('🎨 Colors ready, generating calendar with custom colors');
+		// Wait for colors and initial events data before generating calendar
+		Promise.all([
+			waitForColors(),
+			new Promise(resolve => {
+				// Wait for the initial Firebase events listener callback
+				const unsubscribe = onSnapshot(
+					query(collection(db, 'events'), where('workspaceId', '==', currentWorkspace), orderBy('startDate', 'asc')),
+					(snapshot) => {
+						// Only resolve on the first callback (initial data load)
+						resolve();
+						unsubscribe(); // Clean up this temporary listener
+					}
+				);
+			})
+		]).then(() => {
+			console.log('🎨 Colors and events ready, generating calendar');
 			generateCalendar(currentDate);
-			console.log('✅ Calendar generated successfully with colors');
-
-			// Set default tab to "My Tasks" if no tab is active
-			const activeTab = document.querySelector('.tab-btn.active');
-			console.log('🚀 Checking for active tab after workspace load. Active tab found:', !!activeTab);
-			if (!activeTab) {
-				console.log('🎯 No active tab found, setting default to my-tasks');
-				switchTab('my-tasks').catch(console.error);
-			} else {
-				console.log('✅ Active tab already exists:', activeTab.textContent.trim());
-			}
+			console.log('✅ Calendar generated successfully with colors and events');
 		});
 
 		console.log('Workspace loaded successfully');
@@ -773,82 +776,91 @@ async function updatePartnerInfo(members) {
 
 // Real-time Event Listener
 function setupEventListener() {
-	console.log('🔧 Setting up event listener for workspace:', currentWorkspace);
-	console.log('🔧 Current user:', $currentUser.get()?.uid);
-	console.log('🔧 Auth user:', auth.currentUser?.uid);
+    console.log('🔧 Setting up event listener for workspace:', currentWorkspace);
+    console.log('🔧 Current user:', $currentUser.get()?.uid);
+    console.log('🔧 Auth user:', auth.currentUser?.uid);
 
-	if (!currentWorkspace) {
-		console.error('❌ No current workspace set for event listener');
-		return;
-	}
+    if (!currentWorkspace) {
+        console.error('❌ No current workspace set for event listener');
+        return;
+    }
 
-	console.log('🔧 Workspace exists, proceeding with listener setup');
+    console.log('🔧 Workspace exists, proceeding with listener setup');
 
-	const eventsQuery = query(
-		collection(db, 'events'),
-		where('workspaceId', '==', currentWorkspace),
-		orderBy('startDate', 'asc'),
-	);
+    const eventsQuery = query(
+        collection(db, 'events'),
+        where('workspaceId', '==', currentWorkspace),
+        orderBy('startDate', 'asc'),
+    );
 
-	console.log('🔧 Event query created:', eventsQuery);
+    console.log('🔧 Event query created:', eventsQuery);
 
-	unsubscribeEvents = onSnapshot(eventsQuery, (snapshot) => {
-		console.log('📡 EVENT LISTENER TRIGGERED');
-		console.log('📊 Snapshot docs count:', snapshot.docs.length);
-		console.log('📊 Snapshot metadata:', snapshot.metadata);
-		console.log('📊 Query details:', eventsQuery);
+    // Add flag to track if this is the first listener callback
+    let isInitialCallback = true;
 
-		const newEvents = snapshot.docs.map((doc) => {
-			const data = doc.data();
-			console.log('📄 Processing event doc:', doc.id, {
-				...data,
-				startDate: data.startDate,
-				endDate: data.endDate,
-				workspaceId: data.workspaceId
-			});
-			return {
-				id: doc.id,
-				...data,
-				startDate: data.startDate || '',
-				endDate: data.endDate || data.startDate || '',
-			};
-		});
+    unsubscribeEvents = onSnapshot(eventsQuery, (snapshot) => {
+        console.log('📡 EVENT LISTENER TRIGGERED');
+        console.log('📊 Snapshot docs count:', snapshot.docs.length);
+        console.log('📊 Snapshot metadata:', snapshot.metadata);
+        console.log('📊 Query details:', eventsQuery);
 
-		console.log('✅ Event listener processed. Events count:', newEvents.length);
-		console.log('✅ Global events array before assignment:', events.length);
-		console.log('✅ Events data:', newEvents);
+        const newEvents = snapshot.docs.map((doc) => {
+            const data = doc.data();
+            console.log('📄 Processing event doc:', doc.id, {
+                ...data,
+                startDate: data.startDate,
+                endDate: data.endDate,
+                workspaceId: data.workspaceId
+            });
+            return {
+                id: doc.id,
+                ...data,
+                startDate: data.startDate || '',
+                endDate: data.endDate || data.startDate || '',
+            };
+        });
 
-		events = newEvents;
-		console.log('✅ Global events array after assignment:', events.length);
+        console.log('✅ Event listener processed. Events count:', newEvents.length);
+        console.log('✅ Global events array before assignment:', events.length);
+        console.log('✅ Events data:', newEvents);
 
-		const calendarView = document.getElementById('calendar-view');
-		const isCalendarVisible =
-			calendarView && !calendarView.classList.contains('hidden');
-		console.log('📅 Calendar view visible:', isCalendarVisible);
-		console.log('📅 Calendar element found:', !!calendarView);
+        events = newEvents;
+        console.log('✅ Global events array after assignment:', events.length);
 
-		// Always regenerate calendar when events change to ensure new events appear
-		// regardless of which tab is currently active
-		console.log('🔄 Regenerating calendar with new events');
-		console.log('🔄 Total events to render:', events.length);
-		events.forEach((event, index) => {
-			console.log(`🔄 Event ${index + 1}:`, {
-				id: event.id,
-				title: event.title,
-				startDate: event.startDate,
-				endDate: event.endDate,
-				workspaceId: event.workspaceId
-			});
-		});
+        const calendarView = document.getElementById('calendar-view');
+        const isCalendarVisible = calendarView && !calendarView.classList.contains('hidden');
+        console.log('📅 Calendar view visible:', isCalendarVisible);
+        console.log('📅 Calendar element found:', !!calendarView);
 
-		console.log('🔄 Calling generateCalendar...');
-		generateCalendar(currentDate);
-		console.log('🔄 generateCalendar completed');
-	}, (error) => {
-		console.error('❌ Error in event listener:', error);
-		console.error('❌ Error code:', error.code);
-		console.error('❌ Error message:', error.message);
-	});
+        // Skip calendar generation on the first callback since it's already generated in loadWorkspace
+        if (isInitialCallback) {
+            console.log('🔄 Skipping initial calendar generation (already done in loadWorkspace)');
+            isInitialCallback = false;
+            return;
+        }
+
+        // Always regenerate calendar when events change to ensure new events appear
+        // regardless of which tab is currently active
+        console.log('🔄 Regenerating calendar with new events');
+        console.log('🔄 Total events to render:', events.length);
+        events.forEach((event, index) => {
+            console.log(`🔄 Event ${index + 1}:`, {
+                id: event.id,
+                title: event.title,
+                startDate: event.startDate,
+                endDate: event.endDate,
+                workspaceId: event.workspaceId
+            });
+        });
+
+        console.log('🔄 Calling generateCalendar...');
+        generateCalendar(currentDate);
+        console.log('🔄 generateCalendar completed');
+    }, (error) => {
+        console.error('❌ Error in event listener:', error);
+        console.error('❌ Error code:', error.code);
+        console.error('❌ Error message:', error.message);
+    });
 }
 
 // Real-time Todo Listener
@@ -995,12 +1007,6 @@ function calculateEventPosition(event, dayEvents, dayElement, maxVisibleEvents =
 	// Base positioning
 	let topOffset = 4; // Start below day number
 
-	// Enhanced multi-day event positioning with dual correction
-	if (isMultiDay) {
-		// Apply existing 79px row correction for proper vertical alignment
-		topOffset += 79;
-	}
-
 	const eventHeight = 22
 	let eventSpacing = 6;
 
@@ -1045,8 +1051,21 @@ function calculateEventPosition(event, dayEvents, dayElement, maxVisibleEvents =
 }
 
 // Enhanced Event Rendering with Positioning and Improved Color System
-function renderEventWithPositioning(event, dayEvents, dayElement) {
-	const position = calculateEventPosition(event, dayEvents, dayElement);
+function renderEventWithPositioning(event, dayEvents, dayElement, fixedTopPosition = null) {
+	let position;
+	if (fixedTopPosition !== null) {
+		// Use predetermined position for single-day events
+		position = {
+			top: fixedTopPosition,
+			height: 22,
+			category: 'single-day',
+			isColliding: false
+		};
+	} else {
+		// Use collision detection for multi-day events
+		position = calculateEventPosition(event, dayEvents, dayElement);
+	}
+
 	const eventCategory = position.category;
 	const isMultiDay = eventCategory !== 'single-day';
 
@@ -1332,6 +1351,8 @@ function generateCalendar(date) {
 	console.log('📊 Current month/year:', date.getFullYear(), date.getMonth() + 1);
 
 	// Enhanced Event Rendering with Advanced Positioning
+	// Track event counts per day for proper positioning
+	const dayEventCounts = new Map(); // date string -> count of single-day events rendered
 	sortedEvents.forEach((event, index) => {
 		console.log(`📅 Processing event ${index + 1}:`, {
 			id: event.id,
@@ -1343,221 +1364,236 @@ function generateCalendar(date) {
 			shared: event.shared
 		});
 
-		if (!event.endDate || event.startDate === event.endDate) {
-			// Single-day event rendering with enhanced positioning
-			console.log(`🔍 Looking for day element with date: ${event.startDate}`);
-			const dayElement = grid.querySelector(`[data-date="${event.startDate}"]`);
-			console.log(`✅ Day element found: ${dayElement ? 'YES' : 'NO'}`);
+	if (!event.endDate || event.startDate === event.endDate) {
+		console.log(`🔗 Processing single-day event: ${event.title} (${event.startDate})`);
+		// Single-day events will be handled in the next section
+	} else {
+		// Enhanced Multi-day Event Rendering with Advanced Positioning
+		const multiDayEvents = sortedEvents.filter((event) => event.endDate && event.startDate !== event.endDate);
+		
+		multiDayEvents.forEach((event) => {
+			console.log(`🔗 Processing enhanced multi-day event: ${event.title} (${event.startDate} to ${event.endDate})`);
+			const startDate = new Date(event.startDate);
+			const endDate = new Date(event.endDate);
+			const eventCategory = categorizeEventDuration(event);
 
-			if (dayElement) {
-				const eventsContainer = dayElement.querySelector('.day-events');
-				console.log(`📦 Events container found: ${eventsContainer ? 'YES' : 'NO'}`);
-				console.log(`📦 Events container children before:`, eventsContainer?.children.length || 0);
-				console.log(`📦 Events container HTML structure:`, eventsContainer?.innerHTML || 'N/A');
-				console.log(`📦 Day element classes before:`, dayElement.className);
+			const currentDate = new Date(startDate);
+			let currentWeekSpan = null;
+			let lastWeekIndex = -1;
+			let spanStartDay = -1;
+			let spanTop = -1;
 
-				if (eventsContainer) {
-					// Check if event already exists to avoid duplicates
-					const existingEvent = eventsContainer.querySelector(`[data-event-id="${event.id}"]`);
-					if (existingEvent) {
-						console.log(`⚠️ Event already exists on calendar, skipping: ${event.title}`);
-						return;
+			while (currentDate <= endDate) {
+				const dateStr = currentDate.toISOString().split('T')[0];
+				const dayElement = grid.querySelector(`[data-date="${dateStr}"]`);
+
+				if (dayElement) {
+					const dayIndex = Array.from(grid.children).indexOf(dayElement) - 7; // Subtract header row
+					const weekIndex = Math.floor(dayIndex / 7);
+					const dayInWeek = dayIndex % 7;
+
+					// Get events for this day for collision detection, excluding the current event
+					const dayEvents = getEventsForDate(dateStr).filter(e => e.id !== event.id);
+
+					// If we're in a new week or this is the first day
+					if (weekIndex !== lastWeekIndex) {
+						if (currentWeekSpan) {
+							// Finalize the previous week's span
+							const weekEnd = lastWeekIndex * 7 + 6;
+							const spanEnd = Math.min(weekEnd, currentWeekSpan._lastDayIndex);
+							const spanStart = (lastWeekIndex * 7) + (currentWeekSpan._startDay % 7);
+							const width = ((spanEnd - spanStart + 1) * 14.28);
+							currentWeekSpan.style.width = `${width}%`;
+						}
+
+						// Start new span for this week with enhanced positioning
+						currentWeekSpan = document.createElement('div');
+						currentWeekSpan.className = `event-span enhanced-multiday ${event.shared ? 'shared' : ''} ${eventCategory} ${dateStr === event.startDate ? 'start' : ''}`;
+
+						// Get the grid's dimensions
+						const dayRect = dayElement.getBoundingClientRect();
+						const gridRect = grid.getBoundingClientRect();
+						const cellHeight = dayRect.height;
+
+						// Enhanced positioning with collision detection
+						const position = calculateEventPosition(event, dayEvents, dayElement);
+						const topPosition = position.top;
+
+						// Get the dynamic color for the event
+						const eventUserType = event.shared ? 'shared' : getEventTypeForUser(event);
+						const eventColor = event.color || getEventColor(eventUserType);
+						const borderColor = event.borderColor || getEventColor(eventUserType);
+
+						// Enhanced multi-day styling with proper CSS variable handling
+						let backgroundStyle;
+						if (eventUserType === 'shared') {
+							// For shared events, check if using CSS variable or hex color
+							if (eventColor.startsWith('var(')) {
+								// CSS variables don't support hex modification, use directly
+								backgroundStyle = eventColor;
+							} else {
+								// Apply HSLA conversion for hex colors
+								const baseColor = hexToHsla(eventColor);
+								backgroundStyle = `linear-gradient(135deg, ${baseColor.replace('hsl', 'hsla').replace(')', ', 0.9)')} 0%, ${baseColor.replace('hsl', 'hsla').replace(')', ', 0.7)')} 70%, ${baseColor.replace('hsl', 'hsla').replace(')', ', 0.6)')} 100%)`;
+							}
+						} else {
+							// Personal events: Apply HSLA conversion for hex colors
+							const baseColor = hexToHsla(eventColor);
+							backgroundStyle = `linear-gradient(135deg, ${baseColor} 0%, ${baseColor.replace('hsl', 'hsla').replace(')', ', 0.85)')} 100%)`;
+						}
+
+						const styles = {
+							position: 'absolute',
+							left: `${dayInWeek * 14.28}%`,
+							width: '14.28%', // Initial width of one day
+							top: `${(weekIndex * cellHeight) + 4+79}px`,
+							height: position.height + 'px',
+							background: backgroundStyle,
+							padding: '2px 6px',
+							fontSize: '0.75rem',
+							borderRadius: '6px',
+							border: `1px solid ${borderColor}99`,
+							borderLeft: eventCategory === 'short-multiday' ? `3px solid ${borderColor}` : `3px solid ${borderColor}`,
+							boxShadow: `0 2px 6px ${borderColor}33, inset 0 1px 0 rgba(255, 255, 255, 0.2)`,
+							cursor: 'pointer',
+							zIndex: '3', // Higher z-index for multi-day events
+							color: '#FFFFFF',
+							whiteSpace: 'nowrap',
+							overflow: 'hidden',
+							textOverflow: 'ellipsis',
+							transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+							fontWeight: eventCategory === 'long-multiday' ? '600' : '500'
+						};
+
+						// Apply styles
+						Object.assign(currentWeekSpan.style, styles);
+
+						currentWeekSpan.textContent = event.title;
+						currentWeekSpan.onclick = () => openEventDetails(event.id);
+						currentWeekSpan._startDay = dayIndex;
+						currentWeekSpan._lastDayIndex = dayIndex;
+
+						// Enhanced hover effects for multi-day events
+						currentWeekSpan.onmouseenter = function() {
+							this.style.transform = 'translateY(-3px) scale(1.02)';
+							this.style.boxShadow = `0 6px 16px ${borderColor}44, inset 0 1px 0 rgba(255, 255, 255, 0.3)`;
+							this.style.zIndex = '10';
+						};
+						currentWeekSpan.onmouseleave = function() {
+							this.style.transform = 'translateY(0) scale(1)';
+							this.style.boxShadow = `0 2px 6px ${borderColor}33, inset 0 1px 0 rgba(255, 255, 255, 0.2)`;
+							this.style.zIndex = '3';
+						};
+
+						// Append to the grid
+						grid.appendChild(currentWeekSpan);
+
+						lastWeekIndex = weekIndex;
+					} else if (currentWeekSpan) {
+						// Update the last day index as we move through the week
+						currentWeekSpan._lastDayIndex = dayIndex;
 					}
-
-					// Get all events for this day for collision detection
-					const dayEvents = getEventsForDate(event.startDate);
-					console.log(`🎯 Day events for collision detection: ${dayEvents.length}`);
-
-					// Use enhanced rendering with positioning
-					console.log(`🎨 Calling renderEventWithPositioning for: "${event.title}"`);
-					const eventElement = renderEventWithPositioning(event, dayEvents, dayElement);
-					console.log(`🎨 Event element created: ${eventElement ? 'SUCCESS' : 'FAILED'}`);
-					console.log(`🎨 Event element details:`, {
-						tagName: eventElement?.tagName,
-						className: eventElement?.className,
-						innerHTML: eventElement?.innerHTML,
-						style: eventElement?.style.cssText
-					});
-
-					// Store reference to this event for collision detection
-					dayEvents.push(event);
-					console.log(`📊 Day events array after push: ${dayEvents.length}`);
-
-					console.log(`🔧 Attempting to append event element to DOM...`);
-					eventsContainer.appendChild(eventElement);
-					console.log(`✅ Enhanced event element appended to calendar for: "${event.title}"`);
-					console.log(`📦 Events container children after:`, eventsContainer.children.length);
-					console.log(`📦 Events container HTML after:`, eventsContainer.innerHTML);
-
-					// Add has-events class to day element
-					console.log(`🏷️ Adding has-events class to day element...`);
-					dayElement.classList.add('has-events');
-					dayElement.classList.remove('no-events');
-					console.log(`🏷️ Added has-events class to day element for: "${event.title}"`);
-					console.log(`🏷️ Day element classes after:`, dayElement.className);
-
-					// Verify the event element is actually in the DOM
-					const verifyElement = eventsContainer.querySelector(`[data-event-id="${event.id}"]`);
-					console.log(`🔍 Verification: Event element found in DOM: ${verifyElement ? 'YES' : 'NO'}`);
-					if (verifyElement) {
-						console.log(`🔍 Verification: Event element position:`, verifyElement.style.top, verifyElement.style.left);
-					}
-				} else {
-					console.error(`❌ Events container not found in day element for date: ${event.startDate}`);
-					console.error(`❌ Day element innerHTML:`, dayElement.innerHTML);
 				}
-			} else {
-				console.log(`❌ No day element found for date: ${event.startDate}`);
-				console.log(`❌ Available data-date attributes:`, Array.from(grid.querySelectorAll('[data-date]')).map(el => el.getAttribute('data-date')).slice(0, 5));
+
+				// Move to next day
+				currentDate.setDate(currentDate.getDate() + 1);
+
+				// If this was the last day, finish the current span
+				if (currentWeekSpan && (dateStr === event.endDate || currentDate > endDate)) {
+					const weekEnd = lastWeekIndex * 7 + 6;
+					const spanEnd = Math.min(weekEnd, currentWeekSpan._lastDayIndex);
+					const spanStart = (lastWeekIndex * 7) + (currentWeekSpan._startDay % 7);
+					const width = ((spanEnd - spanStart + 1) * 14.28);
+					currentWeekSpan.style.width = `${width}%`;
+
+					if (dateStr === event.endDate) {
+						currentWeekSpan.classList.add('end');
+					}
+				}
 			}
-		} else {
-			console.log(`🔗 Processing multi-day event: ${event.title} (${event.startDate} to ${event.endDate})`);
-			// Multi-day events will be handled in the next section
-		}
+		});
+	}
 	});
 
-	// Enhanced Multi-day Event Rendering with Advanced Positioning
-	const multiDayEvents = sortedEvents.filter((event) => event.endDate && event.startDate !== event.endDate);
+	// Enhanced Single-day Event Rendering with Advanced Positioning
+	const singleDayEvents = sortedEvents.filter((event) => !event.endDate || event.startDate === event.endDate);
 
-	multiDayEvents.forEach((event) => {
-		console.log(`🔗 Processing enhanced multi-day event: ${event.title} (${event.startDate} to ${event.endDate})`);
-		const startDate = new Date(event.startDate);
-		const endDate = new Date(event.endDate);
-		const eventCategory = categorizeEventDuration(event);
+	singleDayEvents.forEach((event) => {
+		console.log(`🔍 Processing single-day event: "${event.title}" on ${event.startDate}`);
+		const dayElement = grid.querySelector(`[data-date="${event.startDate}"]`);
+		console.log(`✅ Day element found: ${dayElement ? 'YES' : 'NO'}`);
 
-		const currentDate = new Date(startDate);
-		let currentWeekSpan = null;
-		let lastWeekIndex = -1;
-		let spanStartDay = -1;
-		let spanTop = -1;
+		if (dayElement) {
+			const eventsContainer = dayElement.querySelector('.day-events');
+			console.log(`📦 Events container found: ${eventsContainer ? 'YES' : 'NO'}`);
 
-		while (currentDate <= endDate) {
-			const dateStr = currentDate.toISOString().split('T')[0];
-			const dayElement = grid.querySelector(`[data-date="${dateStr}"]`);
-
-			if (dayElement) {
-				const dayIndex = Array.from(grid.children).indexOf(dayElement) - 7; // Subtract header row
-				const weekIndex = Math.floor(dayIndex / 7);
-				const dayInWeek = dayIndex % 7;
-
-				// Get events for this day for collision detection
-				const dayEvents = getEventsForDate(dateStr);
-
-				// If we're in a new week or this is the first day
-				if (weekIndex !== lastWeekIndex) {
-					if (currentWeekSpan) {
-						// Finalize the previous week's span
-						const weekEnd = lastWeekIndex * 7 + 6;
-						const spanEnd = Math.min(weekEnd, currentWeekSpan._lastDayIndex);
-						const spanStart = (lastWeekIndex * 7) + (currentWeekSpan._startDay % 7);
-						const width = ((spanEnd - spanStart + 1) * 14.28);
-						currentWeekSpan.style.width = `${width}%`;
-					}
-
-					// Start new span for this week with enhanced positioning
-					currentWeekSpan = document.createElement('div');
-					currentWeekSpan.className = `event-span enhanced-multiday ${event.shared ? 'shared' : ''} ${eventCategory} ${dateStr === event.startDate ? 'start' : ''}`;
-
-					// Get the grid's dimensions
-					const dayRect = dayElement.getBoundingClientRect();
-					const gridRect = grid.getBoundingClientRect();
-					const cellHeight = dayRect.height;
-
-					// Enhanced positioning with collision detection
-					const position = calculateEventPosition(event, dayEvents, dayElement);
-					const topPosition = position.top;
-
-					// Get the dynamic color for the event
-					const eventUserType = event.shared ? 'shared' : getEventTypeForUser(event);
-					const eventColor = event.color || getEventColor(eventUserType);
-					const borderColor = event.borderColor || getEventColor(eventUserType);
-
-					// Enhanced multi-day styling with proper CSS variable handling
-					let backgroundStyle;
-					if (eventUserType === 'shared') {
-						// For shared events, check if using CSS variable or hex color
-						if (eventColor.startsWith('var(')) {
-							// CSS variables don't support hex modification, use directly
-							backgroundStyle = eventColor;
-						} else {
-							// Apply HSLA conversion for hex colors
-							const baseColor = hexToHsla(eventColor);
-							backgroundStyle = `linear-gradient(135deg, ${baseColor.replace('hsl', 'hsla').replace(')', ', 0.9)')} 0%, ${baseColor.replace('hsl', 'hsla').replace(')', ', 0.7)')} 70%, ${baseColor.replace('hsl', 'hsla').replace(')', ', 0.6)')} 100%)`;
-						}
-					} else {
-						// Personal events: Apply HSLA conversion for hex colors
-						const baseColor = hexToHsla(eventColor);
-						backgroundStyle = `linear-gradient(135deg, ${baseColor} 0%, ${baseColor.replace('hsl', 'hsla').replace(')', ', 0.85)')} 100%)`;
-					}
-
-					const styles = {
-						position: 'absolute',
-						left: `${dayInWeek * 14.28}%`,
-						width: '14.28%', // Initial width of one day
-						top: `${(weekIndex * cellHeight) + topPosition}px`,
-						height: position.height + 'px',
-						background: backgroundStyle,
-						padding: '2px 6px',
-						fontSize: '0.75rem',
-						borderRadius: '6px',
-						border: `1px solid ${borderColor}99`,
-						borderLeft: eventCategory === 'short-multiday' ? `3px solid ${borderColor}` : `3px solid ${borderColor}`,
-						boxShadow: `0 2px 6px ${borderColor}33, inset 0 1px 0 rgba(255, 255, 255, 0.2)`,
-						cursor: 'pointer',
-						zIndex: '3', // Higher z-index for multi-day events
-						color: '#FFFFFF',
-						whiteSpace: 'nowrap',
-						overflow: 'hidden',
-						textOverflow: 'ellipsis',
-						transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-						fontWeight: eventCategory === 'long-multiday' ? '600' : '500'
-					};
-
-					// Apply styles
-					Object.assign(currentWeekSpan.style, styles);
-
-					currentWeekSpan.textContent = event.title;
-					currentWeekSpan.onclick = () => openEventDetails(event.id);
-					currentWeekSpan._startDay = dayIndex;
-					currentWeekSpan._lastDayIndex = dayIndex;
-
-					// Enhanced hover effects for multi-day events
-					currentWeekSpan.onmouseenter = function() {
-						this.style.transform = 'translateY(-3px) scale(1.02)';
-						this.style.boxShadow = `0 6px 16px ${borderColor}44, inset 0 1px 0 rgba(255, 255, 255, 0.3)`;
-						this.style.zIndex = '10';
-					};
-					currentWeekSpan.onmouseleave = function() {
-						this.style.transform = 'translateY(0) scale(1)';
-						this.style.boxShadow = `0 2px 6px ${borderColor}33, inset 0 1px 0 rgba(255, 255, 255, 0.2)`;
-						this.style.zIndex = '3';
-					};
-
-					// Append to the grid
-					grid.appendChild(currentWeekSpan);
-
-					lastWeekIndex = weekIndex;
-				} else if (currentWeekSpan) {
-					// Update the last day index as we move through the week
-					currentWeekSpan._lastDayIndex = dayIndex;
+			if (eventsContainer) {
+				// Check if event already exists to avoid duplicates
+				const existingEvent = eventsContainer.querySelector(`[data-event-id="${event.id}"]`);
+				if (existingEvent) {
+					console.log(`⚠️ Event already exists on calendar, skipping: ${event.title}`);
+					return;
 				}
-			}
 
-			// Move to next day
-			currentDate.setDate(currentDate.getDate() + 1);
+				// Get current count for this date and increment it
+				const currentCount = dayEventCounts.get(event.startDate) || 0;
+				dayEventCounts.set(event.startDate, currentCount + 1);
 
-			// If this was the last day, finish the current span
-			if (currentWeekSpan && (dateStr === event.endDate || currentDate > endDate)) {
-				const weekEnd = lastWeekIndex * 7 + 6;
-				const spanEnd = Math.min(weekEnd, currentWeekSpan._lastDayIndex);
-				const spanStart = (lastWeekIndex * 7) + (currentWeekSpan._startDay % 7);
-				const width = ((spanEnd - spanStart + 1) * 14.28);
-				currentWeekSpan.style.width = `${width}%`;
+				// Calculate position based on event count, accounting for multi-day events
+				const eventHeight = 22;
+				const eventSpacing = 2;
 
-				if (dateStr === event.endDate) {
-					currentWeekSpan.classList.add('end');
+				// Check for multi-day events that span this date and find their maximum bottom position
+				const dayEvents = getEventsForDate(event.startDate);
+				const multiDayEvents = dayEvents.filter(e => e.endDate && e.startDate !== e.endDate && e.id !== event.id);
+
+				// Calculate the maximum position occupied by multi-day events
+				let maxMultiDayBottom = 4; // Default starting position
+				if (multiDayEvents.length > 0) {
+					// Multi-day events start at 83px (4 + 79 row offset) and may be collision-adjusted higher
+					// We need to find the highest position any multi-day event occupies
+					multiDayEvents.forEach(multiDayEvent => {
+						// Simulate the positioning logic multi-day events use
+						const position = calculateEventPosition(multiDayEvent, dayEvents.filter(e => e.id !== multiDayEvent.id), dayElement);
+						const eventBottom = position.top + position.height;
+						maxMultiDayBottom = Math.max(maxMultiDayBottom, eventBottom);
+					});
+					maxMultiDayBottom += eventSpacing; // Add spacing after multi-day events
 				}
+
+				const topPosition = maxMultiDayBottom + (currentCount * (eventHeight + eventSpacing));
+
+				console.log(`📊 Positioning event "${event.title}" at position ${currentCount} (top: ${topPosition}px)`);
+
+				// Use enhanced rendering with predetermined positioning
+				console.log(`🎨 Calling renderEventWithPositioning for: "${event.title}"`);
+				const eventElement = renderEventWithPositioning(event, [], dayElement, topPosition);
+
+				console.log(`🎨 Event element created: ${eventElement ? 'SUCCESS' : 'FAILED'}`);
+
+				// Store reference to this event for collision detection
+
+				console.log(`🔧 Attempting to append event element to DOM...`);
+				eventsContainer.appendChild(eventElement);
+				console.log(`✅ Enhanced event element appended to calendar for: "${event.title}"`);
+
+				// Add has-events class to day element
+				console.log(`🏷️ Adding has-events class to day element...`);
+				dayElement.classList.add('has-events');
+				dayElement.classList.remove('no-events');
+				console.log(`🏷️ Added has-events class to day element for: "${event.title}"`);
+
+				// Verify the event element is actually in the DOM
+				const verifyElement = eventsContainer.querySelector(`[data-event-id="${event.id}"]`);
+				console.log(`🔍 Verification: Event element found in DOM: ${verifyElement ? 'YES' : 'NO'}`);
+				if (verifyElement) {
+					console.log(`🔍 Verification: Event element position:`, verifyElement.style.top, verifyElement.style.left);
+				}
+			} else {
+				console.error(`❌ Events container not found in day element for date: ${event.startDate}`);
 			}
+		} else {
+			console.log(`❌ No day element found for date: ${event.startDate}`);
 		}
 	});
 }
