@@ -1560,11 +1560,12 @@ function generateCalendar(date) {
 
               const styles = {
                 position: "absolute",
-                left: `${dayInWeek * 14.28}%`,
-                width: "14.28%", // Initial width of one day
+                left: `calc(${dayInWeek * 14.28}% + 3px)`,
+                width: "calc(14.28% - 6px)",
                 top: `${weekIndex * cellHeight + 4 + 79 + (currentCount * 25)}px`,
                 height: position.height + "px",
                 background: backgroundStyle,
+                boxShadow: 'none',
                 padding: "2px 6px",
                 fontSize: "0.75rem",
                 borderRadius: "6px",
@@ -1573,7 +1574,6 @@ function generateCalendar(date) {
                   eventCategory === "short-multiday"
                     ? `3px solid ${borderColor}`
                     : `3px solid ${borderColor}`,
-                boxShadow: `0 2px 6px ${borderColor}33, inset 0 1px 0 rgba(255, 255, 255, 0.2)`,
                 cursor: "pointer",
                 zIndex: "3", // Higher z-index for multi-day events
                 color: "#FFFFFF",
@@ -1595,12 +1595,10 @@ function generateCalendar(date) {
               // Enhanced hover effects for multi-day events
               currentWeekSpan.onmouseenter = function () {
                 this.style.transform = "translateY(-3px) scale(1.02)";
-                this.style.boxShadow = `0 6px 16px ${borderColor}44, inset 0 1px 0 rgba(255, 255, 255, 0.3)`;
                 this.style.zIndex = "10";
               };
               currentWeekSpan.onmouseleave = function () {
                 this.style.transform = "translateY(0) scale(1)";
-                this.style.boxShadow = `0 2px 6px ${borderColor}33, inset 0 1px 0 rgba(255, 255, 255, 0.2)`;
                 this.style.zIndex = "3";
               };
 

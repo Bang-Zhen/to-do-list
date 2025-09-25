@@ -1003,7 +1003,7 @@ body {
   text-overflow: ellipsis;
   cursor: pointer;
   transition: all 0.3s ease;
-  width: calc(100% - 2px);
+  width: calc(100% - 4px);
   line-height: 1.2;
   box-sizing: border-box;
   position: relative;
@@ -2175,7 +2175,7 @@ input[type="time"]::-webkit-datetime-edit-ampm-field {
     height: 16px;
   }
   .event-span {
-    transform: translateY(-16px) !important;
+    transform: translateY(-14px) !important;
   }
 }
 
