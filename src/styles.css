@@ -919,13 +919,14 @@ body {
   box-sizing: border-box;
 }
 
-/* Round top corners for Sunday and Saturday */
-.day-header:first-child {
-  border-top-left-radius: 15px;
+/* Sunday - first day */
+.day-header:nth-child(1) {
+    border-top-left-radius: 15px;
 }
 
-.day-header:last-child {
-  border-top-right-radius: 15px;
+/* Saturday - seventh day */
+.day-header:nth-child(7) {
+    border-top-right-radius: 15px;
 }
 
 .calendar-day {
