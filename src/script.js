@@ -729,25 +729,7 @@ async function loadWorkspace() {
 		showMainApp();
 		hideAuthModal();
 
-		// Wait for colors and initial events data before generating calendar
-		Promise.all([
-			waitForColors(),
-			new Promise(resolve => {
-				// Wait for the initial Firebase events listener callback
-				const unsubscribe = onSnapshot(
-					query(collection(db, 'events'), where('workspaceId', '==', currentWorkspace), orderBy('startDate', 'asc')),
-					(snapshot) => {
-						// Only resolve on the first callback (initial data load)
-						resolve();
-						unsubscribe(); // Clean up this temporary listener
-					}
-				);
-			})
-		]).then(() => {
-			console.log('🎨 Colors and events ready, generating calendar');
-			generateCalendar(currentDate);
-			console.log('✅ Calendar generated successfully with colors and events');
-		});
+		// Event and todo listeners will handle calendar generation
 
 		console.log('Workspace loaded successfully');
 	} catch (error) {
@@ -795,9 +777,6 @@ function setupEventListener() {
 
     console.log('🔧 Event query created:', eventsQuery);
 
-    // Add flag to track if this is the first listener callback
-    let isInitialCallback = true;
-
     unsubscribeEvents = onSnapshot(eventsQuery, (snapshot) => {
         console.log('📡 EVENT LISTENER TRIGGERED');
         console.log('📊 Snapshot docs count:', snapshot.docs.length);
@@ -831,13 +810,6 @@ function setupEventListener() {
         const isCalendarVisible = calendarView && !calendarView.classList.contains('hidden');
         console.log('📅 Calendar view visible:', isCalendarVisible);
         console.log('📅 Calendar element found:', !!calendarView);
-
-        // Skip calendar generation on the first callback since it's already generated in loadWorkspace
-        if (isInitialCallback) {
-            console.log('🔄 Skipping initial calendar generation (already done in loadWorkspace)');
-            isInitialCallback = false;
-            return;
-        }
 
         // Always regenerate calendar when events change to ensure new events appear
         // regardless of which tab is currently active
@@ -1370,7 +1342,8 @@ function generateCalendar(date) {
 	} else {
 		// Enhanced Multi-day Event Rendering with Advanced Positioning
 		const multiDayEvents = sortedEvents.filter((event) => event.endDate && event.startDate !== event.endDate);
-		
+
+		// First pass: Render all multi-day events
 		multiDayEvents.forEach((event) => {
 			console.log(`🔗 Processing enhanced multi-day event: ${event.title} (${event.startDate} to ${event.endDate})`);
 			const startDate = new Date(event.startDate);
@@ -1515,87 +1488,91 @@ function generateCalendar(date) {
 	}
 	});
 
-	// Enhanced Single-day Event Rendering with Advanced Positioning
-	const singleDayEvents = sortedEvents.filter((event) => !event.endDate || event.startDate === event.endDate);
+	// Force DOM update before rendering single-day events
+	// This ensures multi-day events are fully positioned
+	setTimeout(() => {
+		// Enhanced Single-day Event Rendering with Advanced Positioning
+		const singleDayEvents = sortedEvents.filter((event) => !event.endDate || event.startDate === event.endDate);
 
-	singleDayEvents.forEach((event) => {
-		console.log(`🔍 Processing single-day event: "${event.title}" on ${event.startDate}`);
-		const dayElement = grid.querySelector(`[data-date="${event.startDate}"]`);
-		console.log(`✅ Day element found: ${dayElement ? 'YES' : 'NO'}`);
+		singleDayEvents.forEach((event) => {
+			console.log(`🔍 Processing single-day event: "${event.title}" on ${event.startDate}`);
+			const dayElement = grid.querySelector(`[data-date="${event.startDate}"]`);
+			console.log(`✅ Day element found: ${dayElement ? 'YES' : 'NO'}`);
 
-		if (dayElement) {
-			const eventsContainer = dayElement.querySelector('.day-events');
-			console.log(`📦 Events container found: ${eventsContainer ? 'YES' : 'NO'}`);
+			if (dayElement) {
+				const eventsContainer = dayElement.querySelector('.day-events');
+				console.log(`📦 Events container found: ${eventsContainer ? 'YES' : 'NO'}`);
 
-			if (eventsContainer) {
-				// Check if event already exists to avoid duplicates
-				const existingEvent = eventsContainer.querySelector(`[data-event-id="${event.id}"]`);
-				if (existingEvent) {
-					console.log(`⚠️ Event already exists on calendar, skipping: ${event.title}`);
-					return;
-				}
+				if (eventsContainer) {
+					// Check if event already exists to avoid duplicates
+					const existingEvent = eventsContainer.querySelector(`[data-event-id="${event.id}"]`);
+					if (existingEvent) {
+						console.log(`⚠️ Event already exists on calendar, skipping: ${event.title}`);
+						return;
+					}
 
-				// Get current count for this date and increment it
-				const currentCount = dayEventCounts.get(event.startDate) || 0;
-				dayEventCounts.set(event.startDate, currentCount + 1);
+					// Get current count for this date and increment it
+					const currentCount = dayEventCounts.get(event.startDate) || 0;
+					dayEventCounts.set(event.startDate, currentCount + 1);
 
-				// Calculate position based on event count, accounting for multi-day events
-				const eventHeight = 22;
-				const eventSpacing = 2;
+					// Calculate position based on event count, accounting for multi-day events
+					const eventHeight = 22;
+					const eventSpacing = 2;
 
-				// Check for multi-day events that span this date and find their maximum bottom position
-				const dayEvents = getEventsForDate(event.startDate);
-				const multiDayEvents = dayEvents.filter(e => e.endDate && e.startDate !== e.endDate && e.id !== event.id);
+					// Check for multi-day events that span this date and find their maximum bottom position
+					const dayEvents = getEventsForDate(event.startDate);
+					const multiDayEvents = dayEvents.filter(e => e.endDate && e.startDate !== e.endDate && e.id !== event.id);
 
-				// Calculate the maximum position occupied by multi-day events
-				let maxMultiDayBottom = 4; // Default starting position
-				if (multiDayEvents.length > 0) {
-					// Multi-day events start at 83px (4 + 79 row offset) and may be collision-adjusted higher
-					// We need to find the highest position any multi-day event occupies
-					multiDayEvents.forEach(multiDayEvent => {
-						// Simulate the positioning logic multi-day events use
-						const position = calculateEventPosition(multiDayEvent, dayEvents.filter(e => e.id !== multiDayEvent.id), dayElement);
-						const eventBottom = position.top + position.height;
-						maxMultiDayBottom = Math.max(maxMultiDayBottom, eventBottom);
-					});
-					maxMultiDayBottom += eventSpacing; // Add spacing after multi-day events
-				}
+					// Calculate the maximum position occupied by multi-day events
+					let maxMultiDayBottom = 4; // Default starting position
+					if (multiDayEvents.length > 0) {
+						// Multi-day events start at 83px (4 + 79 row offset) and may be collision-adjusted higher
+						// We need to find the highest position any multi-day event occupies
+						multiDayEvents.forEach(multiDayEvent => {
+							// Simulate the positioning logic multi-day events use
+							const position = calculateEventPosition(multiDayEvent, dayEvents.filter(e => e.id !== multiDayEvent.id), dayElement);
+							const eventBottom = position.top + position.height;
+							maxMultiDayBottom = Math.max(maxMultiDayBottom, eventBottom);
+						});
+						maxMultiDayBottom += eventSpacing; // Add spacing after multi-day events
+					}
 
-				const topPosition = maxMultiDayBottom + (currentCount * (eventHeight + eventSpacing));
+					const topPosition = maxMultiDayBottom + (currentCount * (eventHeight + eventSpacing));
 
-				console.log(`📊 Positioning event "${event.title}" at position ${currentCount} (top: ${topPosition}px)`);
+					console.log(`📊 Positioning event "${event.title}" at position ${currentCount} (top: ${topPosition}px)`);
 
-				// Use enhanced rendering with predetermined positioning
-				console.log(`🎨 Calling renderEventWithPositioning for: "${event.title}"`);
-				const eventElement = renderEventWithPositioning(event, [], dayElement, topPosition);
+					// Use enhanced rendering with predetermined positioning
+					console.log(`🎨 Calling renderEventWithPositioning for: "${event.title}"`);
+					const eventElement = renderEventWithPositioning(event, [], dayElement, topPosition);
 
-				console.log(`🎨 Event element created: ${eventElement ? 'SUCCESS' : 'FAILED'}`);
+					console.log(`🎨 Event element created: ${eventElement ? 'SUCCESS' : 'FAILED'}`);
 
-				// Store reference to this event for collision detection
+					// Store reference to this event for collision detection
 
-				console.log(`🔧 Attempting to append event element to DOM...`);
-				eventsContainer.appendChild(eventElement);
-				console.log(`✅ Enhanced event element appended to calendar for: "${event.title}"`);
+					console.log(`🔧 Attempting to append event element to DOM...`);
+					eventsContainer.appendChild(eventElement);
+					console.log(`✅ Enhanced event element appended to calendar for: "${event.title}"`);
 
-				// Add has-events class to day element
-				console.log(`🏷️ Adding has-events class to day element...`);
-				dayElement.classList.add('has-events');
-				dayElement.classList.remove('no-events');
-				console.log(`🏷️ Added has-events class to day element for: "${event.title}"`);
+					// Add has-events class to day element
+					console.log(`🏷️ Adding has-events class to day element...`);
+					dayElement.classList.add('has-events');
+					dayElement.classList.remove('no-events');
+					console.log(`🏷️ Added has-events class to day element for: "${event.title}"`);
 
-				// Verify the event element is actually in the DOM
-				const verifyElement = eventsContainer.querySelector(`[data-event-id="${event.id}"]`);
-				console.log(`🔍 Verification: Event element found in DOM: ${verifyElement ? 'YES' : 'NO'}`);
-				if (verifyElement) {
-					console.log(`🔍 Verification: Event element position:`, verifyElement.style.top, verifyElement.style.left);
+					// Verify the event element is actually in the DOM
+					const verifyElement = eventsContainer.querySelector(`[data-event-id="${event.id}"]`);
+					console.log(`🔍 Verification: Event element found in DOM: ${verifyElement ? 'YES' : 'NO'}`);
+					if (verifyElement) {
+						console.log(`🔍 Verification: Event element position:`, verifyElement.style.top, verifyElement.style.left);
+					}
+				} else {
+					console.error(`❌ Events container not found in day element for date: ${event.startDate}`);
 				}
 			} else {
-				console.error(`❌ Events container not found in day element for date: ${event.startDate}`);
+				console.log(`❌ No day element found for date: ${event.startDate}`);
 			}
-		} else {
-			console.log(`❌ No day element found for date: ${event.startDate}`);
-		}
-	});
+		});
+	}, 0); // End of setTimeout to force DOM update
 }
 
 function changeMonth(direction) {
