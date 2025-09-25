@@ -1551,13 +1551,12 @@ function generateCalendar(date) {
                   .replace("hsl", "hsla")
                   .replace(")", ", 0.85)")} 100%)`;
               }
-              const mobileOffset = window.innerWidth < 768 ? -16 : 0;
 
               const styles = {
                 position: "absolute",
                 left: `${dayInWeek * 14.28}%`,
-                width: "14.28%",
-                top: `${weekIndex * cellHeight + 4 + 79 + mobileOffset}px`,
+                width: "14.28%", // Initial width of one day
+                top: `${weekIndex * cellHeight + 4 + 79}px`,
                 height: position.height + "px",
                 background: backgroundStyle,
                 padding: "2px 6px",

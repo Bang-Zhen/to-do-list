@@ -2174,6 +2174,9 @@ input[type="time"]::-webkit-datetime-edit-ampm-field {
     width: 16px;
     height: 16px;
   }
+  .event-span {
+    transform: translateY(-16px) !important;
+  }
 }
 
 @media (max-width: 480px) {
