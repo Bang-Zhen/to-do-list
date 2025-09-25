@@ -1542,6 +1542,31 @@ body {
 	}
 }
 
+@keyframes removeEvent {
+    0% {
+        transform: translateY(0);
+        opacity: 1;
+        margin-bottom: 15px;
+        padding: 16px;
+    }
+    100% {
+        transform: translateY(-10px);
+        opacity: 0;
+        margin-bottom: 0;
+        padding: 0;
+        height: 0;
+        pointer-events: none;
+    }
+}
+
+.events-list {
+    transition: all 0.3s ease-out;
+}
+
+.event-item.removing {
+	animation: removeEvent 0.5s ease-in-out forwards;
+}
+
 .delete-todo-btn {
 	background: transparent;
 	color: rgba(255, 87, 87, 0.7);

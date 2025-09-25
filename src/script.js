@@ -2606,6 +2606,27 @@ async function deleteEvent(eventId) {
 		await deleteDoc(doc(db, 'events', eventId));
 		console.log('Successfully deleted event from database:', eventId);
 
+		// Find and animate removal of the event item in the popup
+		const eventItem = document.querySelector(`.event-item [data-event-id="${eventId}"]`)?.closest('.event-item');
+		if (eventItem) {
+			console.log('Found event item for animation:', eventItem);
+			// Add removal animation class
+			eventItem.classList.add('removing');
+			
+			// Force layout calculation to ensure transition works
+			eventItem.offsetHeight;
+			
+			// Remove element after animation completes
+			setTimeout(() => {
+				if (eventItem.parentNode) {
+					eventItem.parentNode.removeChild(eventItem);
+					console.log('Event item removed from DOM after animation');
+				}
+			}, 300); // Match the CSS transition duration
+		} else {
+			console.log('Event item not found in current modal, may have already been removed');
+		}
+
 		// Close the day events modal
 		closeModal('day-events-modal');
 
