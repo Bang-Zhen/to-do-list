@@ -2125,11 +2125,11 @@ input[type="time"]::-webkit-datetime-edit-ampm-field {
   display: flex;
   gap: 15px;
   align-items: flex-start;
+  margin-bottom: 20px;
 }
 
 .time-input-group .form-group {
   flex: 1;
-  margin-bottom: 20px;
 }
 
 .time-input-group .form-group label {
@@ -2154,39 +2154,41 @@ input[type="time"]::-webkit-datetime-edit-ampm-field {
 /* Mobile Responsive Time Inputs */
 @media (max-width: 768px) {
   .time-input-group {
-    flex-direction: column;
-    gap: 12px;
+    flex-direction: row;
+    gap: 8px;
   }
 
   .time-input-group .form-group {
-    margin-bottom: 16px;
+    flex: 1; 
+    margin-bottom: 0; 
   }
 
   .time-input-group input[type="time"] {
-    padding: 12px 14px;
-    font-size: 16px; /* Prevents zoom on iOS */
-  }
-
-  .time-input-group input[type="time"]::-webkit-calendar-picker-indicator {
-    right: 8px;
-    width: 18px;
-    height: 18px;
-  }
-}
-
-@media (max-width: 480px) {
-  .time-input-group {
-    gap: 10px;
-  }
-
-  .time-input-group input[type="time"] {
-    padding: 10px 12px;
+    padding: 12px 10px;
+    font-size: 16px;
+    width: 100%;
   }
 
   .time-input-group input[type="time"]::-webkit-calendar-picker-indicator {
     right: 6px;
     width: 16px;
     height: 16px;
+  }
+}
+
+@media (max-width: 480px) {
+  .time-input-group {
+    gap: 6px;
+  }
+
+  .time-input-group input[type="time"] {
+    padding: 10px 8px;
+  }
+
+  .time-input-group input[type="time"]::-webkit-calendar-picker-indicator {
+    right: 4px;
+    width: 14px;
+    height: 14px;
   }
 }
 
