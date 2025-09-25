@@ -4844,6 +4844,7 @@ input[type="time"]::-webkit-datetime-edit-ampm-field {
   line-height: 1.2 !important;
   white-space: nowrap !important;
   min-width: 200px !important;
+  text-shadow: none !important;
 }
 
 .modal
@@ -4892,4 +4893,33 @@ input[type="time"]::-webkit-datetime-edit-ampm-field {
   .btn.shared-memory-btn
   span {
   font-family: var(--font-family-secondary) !important;
+}
+
+/* Mobile adjustments for day-events-modal */
+@media (max-width: 768px) {
+  /* Reduce font size for the date in mobile view */
+  .selected-date {
+    font-size: 1rem !important;
+  }
+  
+  /* Make buttons stack vertically and fit within screen */
+  .modal .daily-events-content .modal-footer .button-group {
+    flex-direction: column;
+    gap: 10px;
+  }
+  
+  .modal .daily-events-content .modal-footer .button-group .btn {
+    min-width: auto !important;
+    width: 100%;
+  }
+}
+
+/* Target button text spans specifically to override inline styles */
+.modal .daily-events-content .modal-footer .button-group .btn.personal-event-btn span,
+.modal .day-events-content .modal-footer .button-group .btn.personal-event-btn span,
+.modal .daily-events-content .modal-footer .button-group .btn.shared-memory-btn span,
+.modal .day-events-content .modal-footer .button-group .btn.shared-memory-btn span {
+  font-family: var(--font-family-secondary) !important;
+  font-size: 15px !important;
+  font-weight: 600 !important;
 }
