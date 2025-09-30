@@ -1683,23 +1683,30 @@ function generateCalendar(date) {
             (e) => e.endDate && e.startDate !== e.endDate && e.id !== event.id
           );
 
-          // Calculate the maximum position occupied by multi-day events
-          let maxMultiDayBottom = 4; // Default starting position
-          if (multiDayEvents.length > 0) {
-            // Multi-day events start at 83px (4 + 79 row offset) and may be collision-adjusted higher
-            // We need to find the highest position any multi-day event occupies
-            multiDayEvents.forEach((multiDayEvent) => {
-              // Simulate the positioning logic multi-day events use
-              const position = calculateEventPosition(
-                multiDayEvent,
-                dayEvents.filter((e) => e.id !== multiDayEvent.id),
-                dayElement
-              );
-              const eventBottom = position.top + position.height;
-              maxMultiDayBottom = Math.max(maxMultiDayBottom, eventBottom);
-            });
-            maxMultiDayBottom += eventSpacing; // Add spacing after multi-day events
-          }
+          // Calculate maxMultiDayBottom from actual rendered multi-day event positions
+          let maxMultiDayBottom = 4; // Default
+          const dayIndex = Array.from(grid.children).indexOf(dayElement) - 7;
+          const weekIndex = Math.floor(dayIndex / 7);
+          const dayInWeek = dayIndex % 7;
+          const cellHeight = dayElement.getBoundingClientRect().height;
+
+          // Get all event spans in the grid
+          const eventSpans = Array.from(grid.querySelectorAll('.event-span'));
+          eventSpans.forEach(span => {
+            const spanWeekIndex = Math.floor((span._startDay) / 7);
+            if (spanWeekIndex === weekIndex) {
+              const spanStartDayInWeek = span._startDay % 7;
+              const spanEndDayInWeek = span._lastDayIndex % 7;
+              if (dayInWeek >= spanStartDayInWeek && dayInWeek <= spanEndDayInWeek) {
+                const spanTop = parseFloat(span.style.top);
+                const spanHeight = parseFloat(span.style.height);
+                const spanBottom = spanTop + spanHeight;
+                const bottomRelativeToDayEvents = spanBottom - weekIndex * cellHeight - 77; // 25 is day-events container offset
+                maxMultiDayBottom = Math.max(maxMultiDayBottom, bottomRelativeToDayEvents);
+              }
+            }
+          });
+          maxMultiDayBottom += eventSpacing;
 
           const topPosition =
             maxMultiDayBottom + currentCount * (eventHeight + eventSpacing);
