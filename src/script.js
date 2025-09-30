@@ -2561,6 +2561,8 @@ function openNewEventModal(selectedDate, isShared = true) {
   if (eventEndTime) eventEndTime.value = "";
   if (eventLocation) eventLocation.value = "";
   if (eventNotes) eventNotes.value = "";
+  // Clear any existing editing ID to ensure we're creating a new event
+  delete document.getElementById("eventForm").dataset.editingId;
 
   // Format and set dates if provided
   if (selectedDate) {
