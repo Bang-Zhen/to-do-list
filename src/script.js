@@ -397,6 +397,15 @@ function initializeApp() {
   });
 }
 
+// Add resize listener for live mobile detection during debugging
+let resizeTimeout;
+window.addEventListener('resize', () => {
+  clearTimeout(resizeTimeout);
+  resizeTimeout = setTimeout(() => {
+    generateCalendar(currentDate);
+  }, 250); // Debounce for performance
+});
+
 function showProfileSetup() {
   const profileHTML = `
         <div class="modal active" id="profile-modal">
@@ -1044,7 +1053,7 @@ function calculateEventPosition(
   let topOffset = 4; // Start below day number
 
   const eventHeight = 22;
-  let eventSpacing = 6;
+  let eventSpacing = 2;
 
   // Check for existing events in this day
   const existingEvents = dayEvents.filter((e) => e.id !== event.id);
@@ -1457,6 +1466,9 @@ function generateCalendar(date) {
 
       // First pass: Render all multi-day events
       const weekEventCounts = new Map();
+
+      const isMobile = window.innerWidth < 768;
+
       // First pass: Render all multi-day events
       multiDayEvents.forEach((event) => {
         console.log(
@@ -1558,11 +1570,12 @@ function generateCalendar(date) {
                   .replace(")", ", 0.85)")} 100%)`;
               }
 
+              const verticalOffset = isMobile ? -1 : 0;
               const styles = {
                 position: "absolute",
                 left: `calc(${dayInWeek * 14.28}% + 3px)`,
                 width: "calc(14.28% - 6px)",
-                top: `${weekIndex * cellHeight + 4 + 79 + currentCount * 25}px`,
+                top: `${weekIndex * cellHeight + 83 + verticalOffset + currentCount * 25}px`,
                 height: position.height + "px",
                 background: backgroundStyle,
                 boxShadow: "none",
