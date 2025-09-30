@@ -1034,7 +1034,7 @@ function calculateEventPosition(
   event,
   dayEvents,
   dayElement,
-  maxVisibleEvents = 5
+  maxVisibleEvents = 7
 ) {
   const dayRect = dayElement.getBoundingClientRect();
   const eventCategory = categorizeEventDuration(event);
@@ -1328,7 +1328,7 @@ function generateCalendar(date) {
 				background: var(--primary-gradient);
 				color: white;
 			}
-			.event-pill:nth-child(n+5) {
+			.event-pill:nth-child(n+8) {
 				display: none;
 			}
 			.has-more-events::after {
@@ -1562,10 +1562,10 @@ function generateCalendar(date) {
                 position: "absolute",
                 left: `calc(${dayInWeek * 14.28}% + 3px)`,
                 width: "calc(14.28% - 6px)",
-                top: `${weekIndex * cellHeight + 4 + 79 + (currentCount * 25)}px`,
+                top: `${weekIndex * cellHeight + 4 + 79 + currentCount * 25}px`,
                 height: position.height + "px",
                 background: backgroundStyle,
-                boxShadow: 'none',
+                boxShadow: "none",
                 padding: "2px 6px",
                 fontSize: "0.75rem",
                 borderRadius: "6px",
@@ -2216,8 +2216,13 @@ function openEventModal(
                                     </div>
                                     <div class="event-item-details">
                                         ${
-                                          event.time
-                                            ? `<span class="detail-item">⏰ ${event.time}</span>`
+                                          event.startTime || event.endTime
+                                            ? `<span class="detail-item">⏰ ${
+                                                event.startTime && event.endTime
+                                                  ? `${event.startTime} - ${event.endTime}`
+                                                  : event.startTime ||
+                                                    event.endTime
+                                              }</span>`
                                             : ""
                                         }
                                         ${
@@ -2655,8 +2660,12 @@ function openDayEventsModal(selectedDate) {
                                     </div>
                                     <div class="event-item-details">
                                         ${
-                                          event.time
-                                            ? `<span class="detail-item">⏰ ${event.time}</span>`
+                                          event.startTime || event.endTime
+                                            ? `<span class="detail-item">⏰ ${
+                                                event.startTime && event.endTime
+                                                  ? `${event.startTime} - ${event.endTime}`
+                                                  : event.startTime || event.endTime
+                                              }</span>`
                                             : ""
                                         }
                                         ${
@@ -3174,6 +3183,9 @@ document.getElementById("eventForm").addEventListener("submit", async (e) => {
       : "memory";
     const isShared = eventType === "memory"; // Memory events are shared, personal events are not
 
+    const editingId = e.target.dataset.editingId;
+
+    // Create base event data
     const eventData = {
       title: document.getElementById("eventTitle").value,
       startDate: startDate,
@@ -3184,12 +3196,14 @@ document.getElementById("eventForm").addEventListener("submit", async (e) => {
       notes: document.getElementById("eventNotes").value,
       shared: isShared,
       workspaceId: currentWorkspace,
-      createdBy: currentUser.uid,
-      createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
     };
 
-    const editingId = e.target.dataset.editingId;
+    // Only set creator info for new events
+    if (!editingId) {
+      eventData.createdBy = currentUser.uid;
+      eventData.createdAt = serverTimestamp();
+    }
 
     if (editingId) {
       // Update existing event
