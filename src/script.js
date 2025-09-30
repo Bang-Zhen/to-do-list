@@ -1510,7 +1510,7 @@ function generateCalendar(date) {
                 const spanStart =
                   lastWeekIndex * 7 + (currentWeekSpan._startDay % 7);
                 const width = (spanEnd - spanStart + 1) * 14.28;
-                currentWeekSpan.style.width = `calc(${width}% - 8px)`;
+                currentWeekSpan.style.width = window.innerWidth < 768 ? `calc(${width}% - 6px)` : `calc(${width}% - 8px)`; // Increase width on mobile
               }
 
               // Get current count for this week and increment it
@@ -1638,7 +1638,7 @@ function generateCalendar(date) {
             const spanStart =
               lastWeekIndex * 7 + (currentWeekSpan._startDay % 7);
             const width = (spanEnd - spanStart + 1) * 14.28;
-            currentWeekSpan.style.width = `calc(${width}% - 8px)`;;
+            currentWeekSpan.style.width = window.innerWidth < 768 ? `calc(${width}% - 6px)` : `calc(${width}% - 8px)`; // Increase width on mobile
 
             if (dateStr === event.endDate) {
               currentWeekSpan.classList.add("end");
