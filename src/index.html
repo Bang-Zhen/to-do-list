@@ -29,10 +29,10 @@
                 <h3>Sign In</h3>
                 <form id="email-login-form">
                     <div class="form-group">
-                        <input type="email" id="login-email" placeholder="Email" required>
+                        <input type="email" id="login-email" placeholder="Email" required autocomplete="off">
                     </div>
                     <div class="form-group">
-                        <input type="password" id="login-password" placeholder="Password" required autocomplete="current-password">
+                        <input type="password" id="login-password" placeholder="Password" required autocomplete="off">
                     </div>
                     <button type="submit" class="btn btn-primary full-width">
                         <span>Sign In</span>
@@ -58,13 +58,13 @@
                 <h3>Create Account</h3>
                 <form id="email-signup-form">
                     <div class="form-group">
-                        <input type="text" id="signup-name" placeholder="Your Name" required>
+                        <input type="text" id="signup-name" placeholder="Your Name" required autocomplete="off">
                     </div>
                     <div class="form-group">
-                        <input type="email" id="signup-email" placeholder="Email" required>
+                        <input type="email" id="signup-email" placeholder="Email" required autocomplete="off">
                     </div>
                     <div class="form-group">
-                        <input type="password" id="signup-password" placeholder="Password (6+ characters)" required minlength="6" autocomplete="new-password">
+                        <input type="password" id="signup-password" placeholder="Password (6+ characters)" required minlength="6" autocomplete="off">
                     </div>
                     <button type="submit" class="btn btn-primary full-width">
                         <span>Create Account</span>
@@ -97,7 +97,7 @@
             <form id="workspace-form">
                 <div class="form-group">
                     <label>Workspace Name</label>
-                    <input type="text" id="workspace-name" placeholder="Alex & Blake's Calendar" required>
+                    <input type="text" id="workspace-name" placeholder="Alex & Blake's Calendar" required autocomplete="off">
                 </div>
                 <div class="form-group">
                     <label>Choose Theme</label>
@@ -144,7 +144,7 @@
             <form id="join-form">
                 <div class="form-group">
                     <label>Invitation Code</label>
-                    <input type="text" id="join-code" placeholder="Enter 6-digit code" maxlength="6" required>
+                    <input type="text" id="join-code" placeholder="Enter 6-digit code" maxlength="6" required autocomplete="off">
                 </div>
                 <p class="helper-text">Ask your partner for the invitation code from their app</p>
                 <div class="btn-group">
@@ -291,15 +291,15 @@
                     <form id="profile-settings-form">
                         <div class="form-group">
                             <label>Display Name</label>
-                            <input type="text" id="settings-name" required>
+                            <input type="text" id="settings-name" required autocomplete="off">
                         </div>
                         <div class="form-group">
                             <label>Birthday</label>
-                            <input type="date" id="settings-birthday" required>
+                            <input type="date" id="settings-birthday" required autocomplete="off">
                         </div>
                         <div class="form-group">
                             <label>Bio</label>
-                            <textarea id="settings-bio" rows="3"></textarea>
+                            <textarea id="settings-bio" rows="3" autocomplete="off"></textarea>
                         </div>
                         <button type="submit" class="btn btn-primary">
                             <span>Save Profile</span>
@@ -320,33 +320,33 @@
                 <form id="eventForm">
                     <div class="form-group">
                         <label>Title</label>
-                        <input type="text" id="eventTitle" required>
+                        <input type="text" id="eventTitle" required autocomplete="off">
                     </div>
                     <div class="form-group">
                         <label>Start Date</label>
-                        <input type="date" id="eventStartDate" required>
+                        <input type="date" id="eventStartDate" required autocomplete="off">
                     </div>
                     <div class="form-group">
                         <label>End Date</label>
-                        <input type="date" id="eventEndDate">
+                        <input type="date" id="eventEndDate" autocomplete="off">
                     </div>
                     <div class="time-input-group">
                         <div class="form-group">
                             <label>Start Time</label>
-                            <input type="time" id="eventStartTime">
+                            <input type="time" id="eventStartTime" autocomplete="off">
                         </div>
                         <div class="form-group">
                             <label>End Time</label>
-                            <input type="time" id="eventEndTime">
+                            <input type="time" id="eventEndTime" autocomplete="off">
                         </div>
                     </div>
                     <div class="form-group">
                         <label>Location</label>
-                        <input type="text" id="eventLocation">
+                        <input type="text" id="eventLocation" autocomplete="off">
                     </div>
                     <div class="form-group">
                         <label>Notes</label>
-                        <textarea id="eventNotes" rows="3"></textarea>
+                        <textarea id="eventNotes" rows="3" autocomplete="off"></textarea>
                     </div>
                     <div class="btn-group">
                         <button type="button" class="btn btn-secondary" onclick="closeModal('eventModal')">Cancel</button>
@@ -369,15 +369,15 @@
                 <form id="todoForm">
                     <div class="form-group">
                         <label>Task</label>
-                        <input type="text" id="todoTitle" required>
+                        <input type="text" id="todoTitle" required autocomplete="off">
                     </div>
                     <div class="form-group">
                         <label>Due Date</label>
-                        <input type="date" id="todoDueDate">
+                        <input type="date" id="todoDueDate" autocomplete="off">
                     </div>
                     <div class="form-group">
                         <label>Notes</label>
-                        <textarea id="todoNotes" rows="2"></textarea>
+                        <textarea id="todoNotes" rows="2" autocomplete="off"></textarea>
                     </div>
                     <div class="form-group">
                         <label>Assign to</label>
@@ -544,7 +544,7 @@
                     <form id="email-invite-form">
                         <div class="form-group">
                             <label>Send email invitation:</label>
-                            <input type="email" id="invite-email" placeholder="partner@example.com">
+                            <input type="email" id="invite-email" placeholder="partner@example.com" autocomplete="off">
                         </div>
                         <button type="submit" class="btn btn-primary full-width">Send Invitation</button>
                     </form>
