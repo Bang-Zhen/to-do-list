@@ -921,12 +921,12 @@ body {
 
 /* Sunday - first day */
 .day-header:nth-child(1) {
-    border-top-left-radius: 15px;
+  border-top-left-radius: 15px;
 }
 
 /* Saturday - seventh day */
 .day-header:nth-child(7) {
-    border-top-right-radius: 15px;
+  border-top-right-radius: 15px;
 }
 
 .calendar-day {
@@ -2159,8 +2159,8 @@ input[type="time"]::-webkit-datetime-edit-ampm-field {
   }
 
   .time-input-group .form-group {
-    flex: 1; 
-    margin-bottom: 0; 
+    flex: 1;
+    margin-bottom: 0;
   }
 
   .time-input-group input[type="time"] {
@@ -4250,15 +4250,14 @@ input[type="time"]::-webkit-datetime-edit-ampm-field {
     font-size: 12px;
   }
 
-  /* Compact header button layout */
   .header-right {
-    gap: 6px;
+    gap: 4px;
   }
 
   .header-btn {
-    width: 38px;
-    height: 38px;
-    font-size: 15px;
+    width: 35px;
+    height: 35px;
+    font-size: 14px;
     border-radius: 50%;
     aspect-ratio: 1;
     flex-shrink: 0;
@@ -4266,12 +4265,13 @@ input[type="time"]::-webkit-datetime-edit-ampm-field {
   }
 
   .user-avatar {
-    width: 38px;
-    height: 38px;
+    width: 35px;
+    height: 35px;
     font-size: 14px;
     border-radius: 50%;
     aspect-ratio: 1;
     flex-shrink: 0;
+    box-sizing: border-box;
   }
 
   /* Optimize tab navigation for very small screens */
@@ -4485,7 +4485,7 @@ input[type="time"]::-webkit-datetime-edit-ampm-field {
   .add-task-btn,
   .edit-todo-btn,
   .delete-todo-btn {
-    min-height: 38px;
+    min-height: 35px;
     touch-action: manipulation;
   }
 
@@ -4904,13 +4904,13 @@ input[type="time"]::-webkit-datetime-edit-ampm-field {
   .selected-date {
     font-size: 1rem !important;
   }
-  
+
   /* Make buttons stack vertically and fit within screen */
   .modal .daily-events-content .modal-footer .button-group {
     flex-direction: column;
     gap: 10px;
   }
-  
+
   .modal .daily-events-content .modal-footer .button-group .btn {
     min-width: auto !important;
     width: 100%;
@@ -4918,10 +4918,30 @@ input[type="time"]::-webkit-datetime-edit-ampm-field {
 }
 
 /* Target button text spans specifically to override inline styles */
-.modal .daily-events-content .modal-footer .button-group .btn.personal-event-btn span,
-.modal .day-events-content .modal-footer .button-group .btn.personal-event-btn span,
-.modal .daily-events-content .modal-footer .button-group .btn.shared-memory-btn span,
-.modal .day-events-content .modal-footer .button-group .btn.shared-memory-btn span {
+.modal
+  .daily-events-content
+  .modal-footer
+  .button-group
+  .btn.personal-event-btn
+  span,
+.modal
+  .day-events-content
+  .modal-footer
+  .button-group
+  .btn.personal-event-btn
+  span,
+.modal
+  .daily-events-content
+  .modal-footer
+  .button-group
+  .btn.shared-memory-btn
+  span,
+.modal
+  .day-events-content
+  .modal-footer
+  .button-group
+  .btn.shared-memory-btn
+  span {
   font-family: var(--font-family-secondary) !important;
   font-size: 15px !important;
   font-weight: 600 !important;
