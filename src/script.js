@@ -399,7 +399,7 @@ function initializeApp() {
 
 // Add resize listener for live mobile detection during debugging
 let resizeTimeout;
-window.addEventListener('resize', () => {
+window.addEventListener("resize", () => {
   clearTimeout(resizeTimeout);
   resizeTimeout = setTimeout(() => {
     generateCalendar(currentDate);
@@ -1241,8 +1241,72 @@ function generateCalendar(date) {
 
   // Generate calendar days
   const firstDay = new Date(year, month, 1).getDay();
-  const daysInMonth = new Date(year, month + 1, 0).getDate();
   const daysInPrevMonth = new Date(year, month, 0).getDate();
+  // Expand events to include repeat instances for the current month
+  const expandedEvents = [...events];
+  const currentMonth = date.getMonth();
+  const currentYear = date.getFullYear();
+  const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+
+  for (let day = 1; day <= daysInMonth; day++) {
+    const dateStr = `${currentYear}-${String(currentMonth + 1).padStart(
+      2,
+      "0"
+    )}-${String(day).padStart(2, "0")}`;
+
+    events.forEach((event) => {
+      if (event.repeat && event.repeat !== "none") {
+        const start = new Date(event.startDate);
+        const check = new Date(dateStr);
+
+        if (check >= start && dateStr !== event.startDate) {
+          let matches = false;
+          const daysDiff = Math.floor((check - start) / (1000 * 60 * 60 * 24));
+
+          switch (event.repeat) {
+            case "weekly":
+              matches = daysDiff % 7 === 0;
+              break;
+            case "biweekly":
+              matches = daysDiff % 14 === 0;
+              break;
+            case "monthly":
+              matches = check.getDate() === start.getDate() && check > start;
+              break;
+            case "yearly":
+              matches =
+                check.getMonth() === start.getMonth() &&
+                check.getDate() === start.getDate() &&
+                check > start;
+              break;
+          }
+
+          if (matches) {
+            // Calculate new end date for multi-day events
+            let newEndDate = dateStr;
+            if (event.endDate && event.endDate !== event.startDate) {
+              const duration =
+                new Date(event.endDate).getTime() -
+                new Date(event.startDate).getTime();
+              newEndDate = new Date(check.getTime() + duration)
+                .toISOString()
+                .split("T")[0];
+            }
+
+            const virtualEvent = {
+              ...event,
+              startDate: dateStr,
+              endDate: newEndDate,
+              isVirtual: true,
+              originalId: event.id,
+            };
+
+            expandedEvents.push(virtualEvent);
+          }
+        }
+      }
+    });
+  }
 
   // Create array to store all calendar days
   const calendarDays = [];
@@ -1425,7 +1489,7 @@ function generateCalendar(date) {
   });
 
   // Use enhanced dynamic sorting with date, time, and priority order: short-multiday → long-multiday → single-day
-  const sortedEvents = sortEventsDynamically(events);
+  const sortedEvents = sortEventsDynamically(expandedEvents);
 
   console.log("🎨 RENDERING EVENTS ON CALENDAR");
   console.log("📊 Total events to render:", sortedEvents.length);
@@ -1510,7 +1574,10 @@ function generateCalendar(date) {
                 const spanStart =
                   lastWeekIndex * 7 + (currentWeekSpan._startDay % 7);
                 const width = (spanEnd - spanStart + 1) * 14.28;
-                currentWeekSpan.style.width = window.innerWidth < 768 ? `calc(${width}% - 6px)` : `calc(${width}% - 8px)`; // Increase width on mobile
+                currentWeekSpan.style.width =
+                  window.innerWidth < 768
+                    ? `calc(${width}% - 6px)`
+                    : `calc(${width}% - 8px)`; // Increase width on mobile
               }
 
               // Get current count for this week and increment it
@@ -1575,7 +1642,12 @@ function generateCalendar(date) {
                 position: "absolute",
                 left: `calc(${dayInWeek * 14.28}% + 3px)`,
                 width: "calc(14.28% - 8px)",
-                top: `${weekIndex * cellHeight + 83 + verticalOffset + currentCount * 25}px`,
+                top: `${
+                  weekIndex * cellHeight +
+                  83 +
+                  verticalOffset +
+                  currentCount * 25
+                }px`,
                 height: position.height + "px",
                 background: backgroundStyle,
                 boxShadow: "none",
@@ -1638,7 +1710,10 @@ function generateCalendar(date) {
             const spanStart =
               lastWeekIndex * 7 + (currentWeekSpan._startDay % 7);
             const width = (spanEnd - spanStart + 1) * 14.28;
-            currentWeekSpan.style.width = window.innerWidth < 768 ? `calc(${width}% - 6px)` : `calc(${width}% - 8px)`; // Increase width on mobile
+            currentWeekSpan.style.width =
+              window.innerWidth < 768
+                ? `calc(${width}% - 6px)`
+                : `calc(${width}% - 8px)`; // Increase width on mobile
 
             if (dateStr === event.endDate) {
               currentWeekSpan.classList.add("end");
@@ -1704,18 +1779,25 @@ function generateCalendar(date) {
           const cellHeight = dayElement.getBoundingClientRect().height;
 
           // Get all event spans in the grid
-          const eventSpans = Array.from(grid.querySelectorAll('.event-span'));
-          eventSpans.forEach(span => {
-            const spanWeekIndex = Math.floor((span._startDay) / 7);
+          const eventSpans = Array.from(grid.querySelectorAll(".event-span"));
+          eventSpans.forEach((span) => {
+            const spanWeekIndex = Math.floor(span._startDay / 7);
             if (spanWeekIndex === weekIndex) {
               const spanStartDayInWeek = span._startDay % 7;
               const spanEndDayInWeek = span._lastDayIndex % 7;
-              if (dayInWeek >= spanStartDayInWeek && dayInWeek <= spanEndDayInWeek) {
+              if (
+                dayInWeek >= spanStartDayInWeek &&
+                dayInWeek <= spanEndDayInWeek
+              ) {
                 const spanTop = parseFloat(span.style.top);
                 const spanHeight = parseFloat(span.style.height);
                 const spanBottom = spanTop + spanHeight;
-                const bottomRelativeToDayEvents = spanBottom - weekIndex * cellHeight - 77; // 25 is day-events container offset
-                maxMultiDayBottom = Math.max(maxMultiDayBottom, bottomRelativeToDayEvents);
+                const bottomRelativeToDayEvents =
+                  spanBottom - weekIndex * cellHeight - 77; // 25 is day-events container offset
+                maxMultiDayBottom = Math.max(
+                  maxMultiDayBottom,
+                  bottomRelativeToDayEvents
+                );
               }
             }
           });
@@ -2138,6 +2220,7 @@ function openEventModal(
     if (eventEndTime) eventEndTime.value = "";
     if (eventLocation) eventLocation.value = "";
     if (eventNotes) eventNotes.value = "";
+    if (eventRepeat) eventRepeat.value = "";
 
     // Format and set dates if provided
     if (selectedDate) {
@@ -2181,11 +2264,7 @@ function openEventModal(
   }
 
   // Check if there are events for the selected date
-  const dateEvents = events.filter((event) => {
-    const startDate = event.startDate;
-    const endDate = event.endDate || event.startDate;
-    return selectedDate >= startDate && selectedDate <= endDate;
-  });
+  const dateEvents = getEventsForDate(selectedDate);
 
   // Detect mobile screen size
   const isMobile = window.innerWidth < 768;
@@ -2686,7 +2765,8 @@ function openDayEventsModal(selectedDate) {
                                             ? `<span class="detail-item">⏰ ${
                                                 event.startTime && event.endTime
                                                   ? `${event.startTime} - ${event.endTime}`
-                                                  : event.startTime || event.endTime
+                                                  : event.startTime ||
+                                                    event.endTime
                                               }</span>`
                                             : ""
                                         }
@@ -2954,16 +3034,67 @@ function getEventsForDate(selectedDate) {
 
   // Filter events that occur on the selected date
   const matchingEvents = events.filter((event) => {
-    const eventStart = new Date(event.startDate);
-    const eventEnd = new Date(event.endDate || event.startDate);
-    const checkDate = new Date(selectedDate);
-
-    const isMatch = checkDate >= eventStart && checkDate <= eventEnd;
+    const startDate = event.startDate;
+    const endDate = event.endDate || event.startDate;
+    const isMatch = selectedDate >= startDate && selectedDate <= endDate;
     console.log(
-      `🔍 Checking event "${event.title}": start=${event.startDate}, end=${event.endDate}, check=${selectedDate}, match=${isMatch}`
+      `🔍 Checking event "${event.title}": start=${startDate}, end=${endDate}, check=${selectedDate}, match=${isMatch}`
     );
 
     return isMatch;
+  });
+
+  // Add repeat instances
+  events.forEach((event) => {
+    if (event.repeat && event.repeat !== "none") {
+      const start = new Date(event.startDate);
+      const check = new Date(selectedDate);
+      if (check >= start && selectedDate !== event.startDate) {
+        // not on original date
+        let matches = false;
+        const daysDiff = Math.floor((check - start) / (1000 * 60 * 60 * 24));
+        switch (event.repeat) {
+          case "weekly":
+            matches = daysDiff % 7 === 0;
+            break;
+          case "biweekly":
+            matches = daysDiff % 14 === 0;
+            break;
+          case "monthly":
+            matches = check.getDate() === start.getDate() && check > start;
+            break;
+          case "yearly":
+            matches =
+              check.getMonth() === start.getMonth() &&
+              check.getDate() === start.getDate() &&
+              check > start;
+            break;
+        }
+        if (matches) {
+          // Calculate new end date for multi-day events
+          let newEndDate = selectedDate;
+          if (event.endDate && event.endDate !== event.startDate) {
+            const duration =
+              new Date(event.endDate).getTime() -
+              new Date(event.startDate).getTime();
+            newEndDate = new Date(check.getTime() + duration)
+              .toISOString()
+              .split("T")[0];
+          }
+          const virtualEvent = {
+            ...event,
+            startDate: selectedDate,
+            endDate: newEndDate,
+            isVirtual: true,
+            originalId: event.id,
+          };
+          matchingEvents.push(virtualEvent);
+          console.log(
+            `🔄 Added repeat instance for "${event.title}" on ${selectedDate}`
+          );
+        }
+      }
+    }
   });
 
   console.log(
@@ -3102,6 +3233,7 @@ function openEventDetails(eventId) {
     document.getElementById("eventEndTime").value = event.endTime || "";
     document.getElementById("eventLocation").value = event.location || "";
     document.getElementById("eventNotes").value = event.notes || "";
+    document.getElementById("eventRepeat").value = event.repeat || "none";
 
     // Set data attribute and modal title based on shared status
     const eventModal = document.getElementById("eventModal");
@@ -3216,6 +3348,7 @@ document.getElementById("eventForm").addEventListener("submit", async (e) => {
       endTime: document.getElementById("eventEndTime").value,
       location: document.getElementById("eventLocation").value,
       notes: document.getElementById("eventNotes").value,
+      repeat: document.getElementById("eventRepeat").value,
       shared: isShared,
       workspaceId: currentWorkspace,
       updatedAt: serverTimestamp(),
