@@ -1354,7 +1354,7 @@ function generateCalendar(date) {
     const style = document.createElement("style");
     style.textContent = `
 			.calendar-day {
-				min-height: 150px;
+				min-height: 156px;
 				padding: 8px;
 				background: rgba(255, 255, 255, 0.03);
 				border-radius: 12px;
