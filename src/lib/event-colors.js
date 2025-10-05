@@ -375,7 +375,14 @@ export function getEventTypeForUser(event) {
 		return 'shared';
 	}
 
-	// If event is personal, map creator to appropriate user type
+	// First priority: Check explicit event.type (from badge toggles)
+	if (event.type === 'bangzhen') {
+		return 'user1';
+	} else if (event.type === 'shixin') {
+		return 'user2';
+	}
+
+	// Fallback: If event is personal, map creator to appropriate user type
 	const currentUser = window.$currentUser?.get();
 	if (!event.createdBy || !currentUser || !window.workspaceMembers || window.workspaceMembers.length === 0) {
 		return 'user1'; // fallback
