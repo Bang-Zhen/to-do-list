@@ -1658,7 +1658,7 @@ function generateCalendar(date) {
 
                 padding: "2px 6px",
                 fontSize: "0.75rem",
-                borderRadius: "6px",
+                borderRadius: "4px",
                 border: `1px solid ${borderColor}99`,
                 borderLeft:
                   eventCategory === "short-multiday"
@@ -1798,7 +1798,7 @@ function generateCalendar(date) {
                 const spanHeight = parseFloat(span.style.height);
                 const spanBottom = spanTop + spanHeight;
                 const bottomRelativeToDayEvents =
-                  spanBottom - weekIndex * cellHeight - 77; // 25 is day-events container offset
+                  spanBottom - weekIndex * cellHeight - 80; // 25 is day-events container offset
                 maxMultiDayBottom = Math.max(
                   maxMultiDayBottom,
                   bottomRelativeToDayEvents

@@ -2,7 +2,9 @@
 description: "Analyse all files and update your memory before answering every question"
 ---
 
-Always ensure that despite any feature updates or functional changes, the overall UI design remains clean, modern, and visually appealing. If any issues or improvements are found, never edit the code directly. Instead, ask me to make manual edits by providing the relevant lines, the segment of code to add, and the segment of code to delete. Follow these principles:
+Always ensure that despite any feature updates or functional changes, the overall UI design remains clean, modern, and visually appealing. If any issues or improvements are found, never edit the code directly. Instead, ask me to make manual edits by providing the relevant lines, the segment of code to add, and the segment of code to delete. Before suggesting any fix or modification, read through all files in the current workspace thoroughly using the auto-approved "read" function to understand the latest project structure, dependencies, and styling conventions. Rebuild your internal context to ensure that all proposed fixes or changes are fully aligned with the most recent codebase, maintaining functionality and proper UI display across devices. Do not assume prior state or cached information.
+
+Follow these principles:
 
 Consistency: Match new components to the existing aesthetic (colors, fonts, spacing, and textures).
 
@@ -19,5 +21,3 @@ Cohesion: Verify that icons, typography, and component styling feel unified, wit
 Polish: Always check that hover effects, popups, and animations are smooth and consistent with the overall theme.
 
 Final Check: After implementing any change, review the entire page to confirm that the design feels intentional, cohesive, and appealing — as if it were part of a single polished product, not a mix of unrelated parts.
-
-Workspace Review: Before making any changes, read through all files in the working space to understand the current structure, dependencies, and styling conventions, and to ensure functionality and proper UI display across devices.
