@@ -1125,7 +1125,9 @@ function renderEventWithPositioning(
 
   // Create event element with enhanced styling
   const eventElement = document.createElement("div");
-  eventElement.className = `event-pill enhanced-event ${event.type === "together" ? "shared" : ""} ${eventCategory} ${position.isColliding ? "shifted" : ""}`;
+  eventElement.className = `event-pill enhanced-event ${
+    event.type === "together" ? "shared" : ""
+  } ${eventCategory} ${position.isColliding ? "shifted" : ""}`;
 
   eventElement.setAttribute("data-event-id", event.id);
   eventElement.setAttribute("data-event-category", eventCategory);
@@ -1585,7 +1587,9 @@ function generateCalendar(date) {
 
               // Start new span for this week with enhanced positioning
               currentWeekSpan = document.createElement("div");
-              currentWeekSpan.className = `event-span enhanced-multiday ${event.type === "together" ? "shared" : ""} ${eventCategory} ${dateStr === event.startDate ? "start" : ""}`;
+              currentWeekSpan.className = `event-span enhanced-multiday ${
+                event.type === "together" ? "shared" : ""
+              } ${eventCategory} ${dateStr === event.startDate ? "start" : ""}`;
 
               // Get the grid's dimensions
               const dayRect = dayElement.getBoundingClientRect();
@@ -1647,7 +1651,11 @@ function generateCalendar(date) {
                 }px`,
                 height: position.height + "px",
                 background: backgroundStyle,
-                boxShadow: "none",
+                boxShadow:
+                  eventUserType === "shared"
+                    ? `0 2px 8px ${borderColor}33, inset 0 1px 0 rgba(255, 255, 255, 0.25)`
+                    : `0 1px 4px ${borderColor}44, inset 0 1px 0 rgba(255, 255, 255, 0.15)`,
+
                 padding: "2px 6px",
                 fontSize: "0.75rem",
                 borderRadius: "6px",
@@ -2304,23 +2312,21 @@ function openEventModal(
                                 <div class="event-item-content">
                                     <div class="event-item-header">
                                         <h4>${event.title}</h4>
-${
-  (() => {
-    const eventType = event.type || (event.shared ? "together" : "bangzhen");
-    let badgeText, badgeClass;
-    if (eventType === "together") {
-      badgeText = "💑 Together";
-      badgeClass = "shared-tag";
-    } else if (eventType === "bangzhen") {
-      badgeText = "💑 bangzhen";
-      badgeClass = "personal-tag";
-    } else {
-      badgeText = "💑 shi xin";
-      badgeClass = "personal-tag";
-    }
-    return `<span class="${badgeClass} event-type-toggle" data-event-id="${event.id}" onclick="event.stopPropagation(); toggleEventType('${event.id}')" style="cursor: pointer;">${badgeText}</span>`;
-  })()
-}
+${(() => {
+  const eventType = event.type || (event.shared ? "together" : "bangzhen");
+  let badgeText, badgeClass;
+  if (eventType === "together") {
+    badgeText = "💑 Together";
+    badgeClass = "shared-tag";
+  } else if (eventType === "bangzhen") {
+    badgeText = "💑 bangzhen";
+    badgeClass = "personal-tag";
+  } else {
+    badgeText = "💑 shi xin";
+    badgeClass = "personal-tag";
+  }
+  return `<span class="${badgeClass} event-type-toggle" data-event-id="${event.id}" onclick="event.stopPropagation(); toggleEventType('${event.id}')" style="cursor: pointer;">${badgeText}</span>`;
+})()}
                                     </div>
                                     <div class="event-item-details">
                                         ${
@@ -2762,23 +2768,21 @@ function openDayEventsModal(selectedDate) {
                                 <div class="event-item-content">
                                     <div class="event-item-header">
                                         <h4>${event.title}</h4>
-${
-  (() => {
-    const eventType = event.type || (event.shared ? "together" : "bangzhen");
-    let badgeText, badgeClass;
-    if (eventType === "together") {
-      badgeText = "💑 Together";
-      badgeClass = "shared-tag";
-    } else if (eventType === "bangzhen") {
-      badgeText = "💑 bangzhen";
-      badgeClass = "personal-tag";
-    } else {
-      badgeText = "💑 shixin";
-      badgeClass = "personal-tag";
-    }
-    return `<span class="${badgeClass} event-type-toggle" data-event-id="${event.id}" onclick="event.stopPropagation(); toggleEventType('${event.id}')" style="cursor: pointer;">${badgeText}</span>`;
-  })()
-}
+${(() => {
+  const eventType = event.type || (event.shared ? "together" : "bangzhen");
+  let badgeText, badgeClass;
+  if (eventType === "together") {
+    badgeText = "💑 Together";
+    badgeClass = "shared-tag";
+  } else if (eventType === "bangzhen") {
+    badgeText = "💑 bangzhen";
+    badgeClass = "personal-tag";
+  } else {
+    badgeText = "💑 shixin";
+    badgeClass = "personal-tag";
+  }
+  return `<span class="${badgeClass} event-type-toggle" data-event-id="${event.id}" onclick="event.stopPropagation(); toggleEventType('${event.id}')" style="cursor: pointer;">${badgeText}</span>`;
+})()}
                                     </div>
                                     <div class="event-item-details">
                                         ${
@@ -3260,9 +3264,14 @@ function openEventDetails(eventId) {
     const eventModal = document.getElementById("eventModal");
     const modalTitle = document.getElementById("event-modal-title");
 
-if (eventModal) {
-  eventModal.setAttribute("data-event-type", (event.type || (event.shared ? "together" : "bangzhen")) === "together" ? "memory" : "personal");
-}
+    if (eventModal) {
+      eventModal.setAttribute(
+        "data-event-type",
+        (event.type || (event.shared ? "together" : "bangzhen")) === "together"
+          ? "memory"
+          : "personal"
+      );
+    }
 
     if (modalTitle) {
       modalTitle.textContent = event.shared
@@ -3348,36 +3357,41 @@ document.getElementById("eventForm").addEventListener("submit", async (e) => {
       }
     }
 
-// Determine shared status based on modal data attribute
-const eventModal = document.getElementById("eventModal");
-const eventType = eventModal
-  ? eventModal.getAttribute("data-event-type")
-  : "memory";
-const isShared = eventType === "memory"; // Memory events are shared, personal events are not
+    // Determine shared status based on modal data attribute
+    const eventModal = document.getElementById("eventModal");
+    const eventType = eventModal
+      ? eventModal.getAttribute("data-event-type")
+      : "memory";
+    const isShared = eventType === "memory"; // Memory events are shared, personal events are not
 
-const editingId = e.target.dataset.editingId;
+    const editingId = e.target.dataset.editingId;
 
-// Determine the appropriate personal event type based on the current user
-let personalEventType = "bangzhen"; // default fallback
-if (!isShared && currentUser && workspaceMembers && workspaceMembers.length >= 1) {
-  const currentUserIndex = workspaceMembers.indexOf(currentUser.uid);
-  personalEventType = currentUserIndex === 0 ? "bangzhen" : "shixin";
-}
+    // Determine the appropriate personal event type based on the current user
+    let personalEventType = "bangzhen"; // default fallback
+    if (
+      !isShared &&
+      currentUser &&
+      workspaceMembers &&
+      workspaceMembers.length >= 1
+    ) {
+      const currentUserIndex = workspaceMembers.indexOf(currentUser.uid);
+      personalEventType = currentUserIndex === 0 ? "bangzhen" : "shixin";
+    }
 
-// Create base event data
-const eventData = {
-  title: document.getElementById("eventTitle").value,
-  startDate: startDate,
-  endDate: endDate,
-  startTime: document.getElementById("eventStartTime").value,
-  endTime: document.getElementById("eventEndTime").value,
-  location: document.getElementById("eventLocation").value,
-  notes: document.getElementById("eventNotes").value,
-  repeat: document.getElementById("eventRepeat").value,
-  type: isShared ? "together" : personalEventType,
-  workspaceId: currentWorkspace,
-  updatedAt: serverTimestamp(),
-};
+    // Create base event data
+    const eventData = {
+      title: document.getElementById("eventTitle").value,
+      startDate: startDate,
+      endDate: endDate,
+      startTime: document.getElementById("eventStartTime").value,
+      endTime: document.getElementById("eventEndTime").value,
+      location: document.getElementById("eventLocation").value,
+      notes: document.getElementById("eventNotes").value,
+      repeat: document.getElementById("eventRepeat").value,
+      type: isShared ? "together" : personalEventType,
+      workspaceId: currentWorkspace,
+      updatedAt: serverTimestamp(),
+    };
 
     // Only set creator info for new events
     if (!editingId) {
@@ -5047,8 +5061,8 @@ function waitForColors(maxWaitMs = 3000) {
 
 // Default colors for event categorization
 const defaultEventColors = {
-  user1: "#667eea",  // bangzhen default color
-  user2: "#e74c3c",  // shixin default color
+  user1: "#667eea", // bangzhen default color
+  user2: "#e74c3c", // shixin default color
   shared: "var(--secondary-gradient)", // together default
 };
 
@@ -5350,7 +5364,7 @@ function getEventTypeForUser(event) {
 // Function to get the color for a specific event type
 function getEventColor(eventType) {
   const colors = { ...defaultEventColors, ...eventColors };
-  
+
   if (eventType === "shared") {
     return "var(--secondary-gradient)";
   } else if (eventType === "user1") {
@@ -5512,15 +5526,15 @@ async function toggleEventType(eventId) {
     }
 
     const event = events[eventIndex];
-const currentType = event.type || (event.shared ? "together" : "bangzhen");
-let newType;
-if (currentType === "together") newType = "bangzhen";
-else if (currentType === "bangzhen") newType = "shixin";
-else newType = "together";
+    const currentType = event.type || (event.shared ? "together" : "bangzhen");
+    let newType;
+    if (currentType === "together") newType = "bangzhen";
+    else if (currentType === "bangzhen") newType = "shixin";
+    else newType = "together";
 
-console.log(
-  `🔄 Toggling event "${event.title}": ${currentType} → ${newType}`
-);
+    console.log(
+      `🔄 Toggling event "${event.title}": ${currentType} → ${newType}`
+    );
 
     // Immediate visual update - find the badge element
     const badgeElement = document.querySelector(
@@ -5544,16 +5558,16 @@ console.log(
       badgeElement.classList.add("tag-transitioning");
       badgeElement.style.transition = "all 0.3s ease";
 
-if (newType === "together") {
-  badgeElement.className = "shared-tag";
-  badgeElement.textContent = "💑 Together";
-} else if (newType === "bangzhen") {
-  badgeElement.className = "personal-tag";
-  badgeElement.textContent = "💑 bangzhen";
-} else {
-  badgeElement.className = "personal-tag";
-  badgeElement.textContent = "💑 shi xin";
-}
+      if (newType === "together") {
+        badgeElement.className = "shared-tag";
+        badgeElement.textContent = "💑 Together";
+      } else if (newType === "bangzhen") {
+        badgeElement.className = "personal-tag";
+        badgeElement.textContent = "💑 bangzhen";
+      } else {
+        badgeElement.className = "personal-tag";
+        badgeElement.textContent = "💑 shi xin";
+      }
 
       // Remove transition class after animation
       setTimeout(() => {
@@ -5588,7 +5602,12 @@ if (newType === "together") {
     setTimeout(() => generateCalendar(currentDate), 200);
 
     // Show notification
-    const eventType = newType === "together" ? "Together" : newType === "bangzhen" ? "bangzhen" : "shixin";
+    const eventType =
+      newType === "together"
+        ? "Together"
+        : newType === "bangzhen"
+        ? "bangzhen"
+        : "shixin";
 
     showNotification(`✨ Event changed to "${eventType}"`, "success");
 
