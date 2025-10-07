@@ -2742,11 +2742,8 @@ function openDayEventsModal(selectedDate) {
       })
     : "";
 
-  const dateEvents = events.filter((event) => {
-    const startDate = event.startDate;
-    const endDate = event.endDate || event.startDate;
-    return selectedDate >= startDate && selectedDate <= endDate;
-  });
+const dateEvents = getEventsForDate(selectedDate);
+
 
   const content = `
         <div class="modal-content daily-events-content" style="color: #333;">
