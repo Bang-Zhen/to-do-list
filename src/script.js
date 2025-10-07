@@ -1634,14 +1634,14 @@ function generateCalendar(date) {
                   .replace(")", ", 0.85)")} 100%)`;
               }
 
-              const verticalOffset = isMobile ? -1 : 0;
+              const verticalOffset = isMobile ? -2 : 0;
               const styles = {
                 position: "absolute",
                 left: `calc(${dayInWeek * 14.28}% + 3px)`,
                 width: "calc(14.28% - 8px)",
                 top: `${
                   weekIndex * cellHeight +
-                  83 +
+                  87 +
                   verticalOffset +
                   currentCount * 25
                 }px`,
