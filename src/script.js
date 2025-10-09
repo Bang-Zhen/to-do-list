@@ -1530,7 +1530,7 @@ function generateCalendar(date) {
       );
 
       // First pass: Render all multi-day events
-      const weekEventCounts = new Map();
+      const weekEventRanges = new Map();
 
       const isMobile = window.innerWidth < 768;
 
@@ -1581,9 +1581,41 @@ function generateCalendar(date) {
                     : `calc(${width}% - 8px)`; // Increase width on mobile
               }
 
-              // Get current count for this week and increment it
-              const currentCount = weekEventCounts.get(weekIndex) || 0;
-              weekEventCounts.set(weekIndex, currentCount + 1);
+              // Calculate the span range for this event in this week
+              let spanStart = dayInWeek;
+              let spanEnd = dayInWeek;
+              let tempDate = new Date(currentDate);
+              while (tempDate <= endDate) {
+                const tempDateStr = tempDate.toISOString().split("T")[0];
+                const tempDayElement = grid.querySelector(
+                  `[data-date="${tempDateStr}"]`
+                );
+                if (!tempDayElement) break;
+                const tempDayIndex =
+                  Array.from(grid.children).indexOf(tempDayElement) - 7;
+                const tempWeekIndex = Math.floor(tempDayIndex / 7);
+                const tempDayInWeek = tempDayIndex % 7;
+                if (tempWeekIndex !== weekIndex) break;
+                spanEnd = tempDayInWeek;
+                tempDate.setDate(tempDate.getDate() + 1);
+              }
+
+              // Count how many previous events this event overlaps with
+              const weekRanges = weekEventRanges.get(weekIndex) || [];
+              let overlappingCount = 0;
+              weekRanges.forEach((range) => {
+                if (spanStart <= range.endDay && range.startDay <= spanEnd) {
+                  overlappingCount++;
+                }
+              });
+
+              const currentCount = overlappingCount;
+
+              // Add this range to the week's ranges
+              weekEventRanges.set(weekIndex, [
+                ...weekRanges,
+                { startDay: spanStart, endDay: spanEnd },
+              ]);
 
               // Start new span for this week with enhanced positioning
               currentWeekSpan = document.createElement("div");
