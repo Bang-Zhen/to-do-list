@@ -1126,11 +1126,6 @@ body {
   transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.event-pill.has-attachment::after {
-  content: "📎";
-  margin-left: 2px;
-  font-size: 8px;
-}
 /* Event Type Toggle Badge Animations */
 .event-type-toggle {
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -1759,21 +1754,6 @@ body {
   font-size: 12px;
   color: var(--text-secondary);
   margin-top: 5px;
-}
-
-.todo-attachment {
-  display: inline-block;
-  background: rgba(255, 255, 255, 0.2);
-  padding: 2px 6px;
-  border-radius: 4px;
-  margin-top: 5px;
-  font-size: 10px;
-  cursor: pointer;
-  transition: all 0.3s ease;
-}
-
-.todo-attachment:hover {
-  background: rgba(255, 255, 255, 0.3);
 }
 
 .add-todo-btn {

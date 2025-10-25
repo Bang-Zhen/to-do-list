@@ -1679,7 +1679,7 @@ function generateCalendar(date) {
                   weekIndex * cellHeight +
                   87 +
                   verticalOffset +
-                  currentCount * 25
+                  currentCount * 24
                 }px`,
                 height: position.height + "px",
                 background: backgroundStyle,
@@ -2377,27 +2377,14 @@ ${(() => {
                                             : ""
                                         }
                                     </div>
-                                    ${
-                                      event.notes
-                                        ? `<div class="event-item-notes">${event.notes}</div>`
-                                        : ""
-                                    }
-                                    ${
-                                      event.attachmentUrl
-                                        ? `
-                                        <div class="event-item-attachment">
-                                            <a href="${
-                                              event.attachmentUrl
-                                            }" target="_blank">
-                                                📎 ${
-                                                  event.attachmentName ||
-                                                  "Attachment"
-                                                }
-                                            </a>
-                                        </div>
-                                    `
-                                        : ""
-                                    }
+                                        ${
+                                          event.notes
+                                            ? `<div class="event-item-notes">${event.notes.replace(
+                                                /\n/g,
+                                                "<br>"
+                                              )}</div>`
+                                            : ""
+                                        }
                                 </div>
                                 <div class="event-item-actions">
                                     <button class="action-btn" onclick="event.stopPropagation(); openEventDetails('${
@@ -2456,7 +2443,6 @@ ${(() => {
         }
         .daily-events-content .detail-item,
         .daily-events-content .event-item-notes,
-        .daily-events-content .event-item-attachment a,
         .daily-events-content .personal-tag,
         .daily-events-content .empty-state-subtext,
         .daily-events-content .no-events-message {
@@ -2591,20 +2577,6 @@ ${(() => {
             font-size: 0.9rem;
             color: var(--text-secondary);
             line-height: 1.4;
-        }
-        .event-item-attachment {
-            margin-top: 8px;
-            font-size: 0.9rem;
-        }
-        .event-item-attachment a {
-            color: var(--text-secondary);
-            text-decoration: none;
-            display: inline-flex;
-            align-items: center;
-            gap: 4px;
-        }
-        .event-item-attachment a:hover {
-            text-decoration: underline;
         }
         .shared-badge {
             background: rgba(255, 255, 255, 0.2);
@@ -2828,27 +2800,14 @@ ${(() => {
                                             : ""
                                         }
                                     </div>
-                                    ${
-                                      event.notes
-                                        ? `<div class="event-item-notes">${event.notes}</div>`
-                                        : ""
-                                    }
-                                    ${
-                                      event.attachmentUrl
-                                        ? `
-                                        <div class="event-item-attachment">
-                                            <a href="${
-                                              event.attachmentUrl
-                                            }" target="_blank">
-                                                📎 ${
-                                                  event.attachmentName ||
-                                                  "Attachment"
-                                                }
-                                            </a>
-                                        </div>
-                                    `
-                                        : ""
-                                    }
+${
+  event.notes
+    ? `<div class="event-item-notes">${event.notes.replace(
+        /\n/g,
+        "<br>"
+      )}</div>`
+    : ""
+}
                                 </div>
                                 <div class="event-item-actions">
                                     <button class="action-btn" onclick="event.stopPropagation(); openEventDetails('${
@@ -2977,17 +2936,6 @@ ${(() => {
             font-size: 0.9rem;
             color: var(--text-secondary);
             line-height: 1.4;
-        }
-        .event-item-attachment {
-            margin-top: 8px;
-            font-size: 0.9rem;
-        }
-        .event-item-attachment a {
-            color: var(--text-secondary);
-            text-decoration: none;
-            display: inline-flex;
-            align-items: center;
-            gap: 4px;
         }
         .event-item-actions {
             display: flex;
@@ -3756,14 +3704,6 @@ function createTodoElement(todo) {
   div.className = "todo-item";
   div.setAttribute("data-todo-id", todo.id);
 
-  const attachmentHtml = todo.attachmentUrl
-    ? `<div class="todo-attachment" onclick="window.open('${
-        todo.attachmentUrl
-      }', '_blank')">
-            📎 ${todo.attachmentName || "Attachment"}
-        </div>`
-    : "";
-
   const dueDateHtml = todo.dueDate
     ? `<div class="todo-meta">Due: ${new Date(
         todo.dueDate
@@ -3777,7 +3717,6 @@ function createTodoElement(todo) {
 	          <strong>${todo.title}</strong>
 	          ${todo.notes ? `<div class="todo-meta">${todo.notes}</div>` : ""}
 	          ${dueDateHtml}
-	          ${attachmentHtml}
 	      </div>
 	      <button class="edit-todo-btn" type="button" data-todo-id="${
           todo.id
