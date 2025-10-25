@@ -1009,6 +1009,7 @@ body {
   position: relative;
   z-index: 2;
   border: 1px solid rgba(255, 255, 255, 0.2);
+  text-align: center;
 }
 
 .event-pill:hover {

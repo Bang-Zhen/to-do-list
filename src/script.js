@@ -1175,12 +1175,11 @@ function renderEventWithPositioning(
 
   // Add category-specific styling with enhanced visual hierarchy
   if (eventCategory === "short-multiday") {
-    eventElement.style.borderLeft = `3px solid ${borderColorHsla}`;
+    eventElement.style.borderLeft = `3px solid ${borderColor}`;
     eventElement.style.paddingLeft = "6px";
   } else if (eventCategory === "long-multiday") {
-    eventElement.style.borderLeft = `3px solid ${borderColorHsla}`;
+    eventElement.style.borderLeft = `3px solid ${borderColor}`;
     eventElement.style.paddingLeft = "6px";
-    eventElement.style.fontWeight = "600";
   }
 
   eventElement.textContent = event.title || "Untitled Event";
@@ -1703,7 +1702,8 @@ function generateCalendar(date) {
                 overflow: "hidden",
                 textOverflow: "ellipsis",
                 transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
-                fontWeight: eventCategory === "long-multiday" ? "600" : "500",
+                textAlign: "center",
+                fontWeight: "500",
               };
 
               // Apply styles
