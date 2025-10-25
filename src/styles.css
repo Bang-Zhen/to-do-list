@@ -1020,6 +1020,12 @@ body {
   z-index: 10;
 }
 
+/* Override shadow for multiday events to maintain alignment */
+.event-pill.short-multiday:hover,
+.event-pill.long-multiday:hover {
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.3);
+}
+
 /* Category-specific styling for multiday events */
 .event-pill.short-multiday {
   background: linear-gradient(
@@ -1028,7 +1034,6 @@ body {
     rgba(41, 128, 185, 0.9)
   );
   border: 1px solid rgba(52, 152, 219, 0.4);
-  box-shadow: 0 2px 8px rgba(52, 152, 219, 0.2);
 }
 
 .event-pill.long-multiday {
@@ -1038,7 +1043,6 @@ body {
     rgba(142, 68, 173, 0.9)
   );
   border: 1px solid rgba(155, 89, 182, 0.4);
-  box-shadow: 0 2px 8px rgba(155, 89, 182, 0.2);
 }
 
 .event-pill.single-day {
@@ -1063,7 +1067,7 @@ body {
     rgba(41, 128, 185, 1)
   );
   transform: translateX(3px) translateY(-1px);
-  box-shadow: 0 4px 16px rgba(52, 152, 219, 0.3);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.3);
 }
 
 .event-pill.long-multiday:hover {
@@ -1073,7 +1077,7 @@ body {
     rgba(142, 68, 173, 1)
   );
   transform: translateX(3px) translateY(-1px);
-  box-shadow: 0 4px 16px rgba(155, 89, 182, 0.3);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.3);
 }
 
 .event-pill.single-day:hover {

@@ -1685,8 +1685,8 @@ function generateCalendar(date) {
                 background: backgroundStyle,
                 boxShadow:
                   eventUserType === "shared"
-                    ? `0 2px 8px ${borderColor}33, inset 0 1px 0 rgba(255, 255, 255, 0.25)`
-                    : `0 1px 4px ${borderColor}44, inset 0 1px 0 rgba(255, 255, 255, 0.15)`,
+                    ? `inset 0 1px 0 rgba(255, 255, 255, 0.25)`
+                    : `inset 0 1px 0 rgba(255, 255, 255, 0.15)`,
 
                 padding: "2px 6px",
                 fontSize: "0.75rem",
@@ -2492,7 +2492,6 @@ ${(() => {
             background: white;
             border-radius: 12px;
             padding: 16px;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
             border: 1px solid rgba(0, 0, 0, 0.1);
             display: flex;
             justify-content: space-between;
@@ -2921,7 +2920,6 @@ ${(() => {
             background: white;
             border-radius: 12px;
             padding: 16px;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
             border: 1px solid rgba(0, 0, 0, 0.1);
             display: flex;
             justify-content: space-between;
