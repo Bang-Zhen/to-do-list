@@ -1676,7 +1676,7 @@ function generateCalendar(date) {
                 width: "calc(14.28% - 8px)",
                 top: `${
                   weekIndex * cellHeight +
-                  87 +
+                  86 +
                   verticalOffset +
                   currentCount * 24
                 }px`,
@@ -1688,7 +1688,7 @@ function generateCalendar(date) {
                     : `inset 0 1px 0 rgba(255, 255, 255, 0.15)`,
 
                 padding: "2px 6px",
-                fontSize: "0.75rem",
+                fontSize: "12.8px",
                 borderRadius: "4px",
                 border: `1px solid ${borderColor}99`,
                 borderLeft:
