@@ -975,6 +975,7 @@ body {
   font-weight: 500;
   flex-shrink: 0;
   margin-bottom: 4px;
+  text-align: center;
 }
 
 .day-events {
