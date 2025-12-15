@@ -3928,6 +3928,16 @@ input[type="time"]::-webkit-datetime-edit-ampm-field {
     max-height: 42px;
     aspect-ratio: 1;
   }
+    .modal {
+    align-items: flex-start; /* Change from center to start */
+    padding-top: 20px; /* Add top padding to maintain some spacing from screen edge */
+  }
+  
+  .modal-content {
+    height: calc(100vh - 40px); /* Make it extend to bottom minus padding */
+    max-height: none; /* Remove the max-height restriction */
+    border-radius: 0 0 20px 20px; /* Optional: adjust border radius for bottom extension */
+  }
 
   .month-year {
     font-size: 1.1rem;
