@@ -4970,3 +4970,15 @@ input[type="time"]::-webkit-datetime-edit-ampm-field {
   font-size: 15px !important;
   font-weight: 600 !important;
 }
+
+/* Auto-resizing textarea styles */
+#eventLocation, #eventNotes, #todoNotes {
+    resize: none; /* Disable manual resize */
+    overflow: hidden; /* Hide scrollbar initially */
+    min-height: 40px; /* Minimum height */
+    transition: height 0.2s ease; /* Smooth height transition */
+    font-family: inherit;
+    font-size: inherit;
+    line-height: 1.4;
+}
+

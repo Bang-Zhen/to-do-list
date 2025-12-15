@@ -626,6 +626,23 @@ async function checkUserWorkspace(currentUser) {
   }
 }
 
+function autoResizeTextarea(textarea) {
+    // Reset height to auto to get the correct scrollHeight
+    textarea.style.height = 'auto';
+    
+    // Set height to scrollHeight (content height)
+    const newHeight = Math.max(textarea.scrollHeight, 40); // Minimum height of 40px
+    textarea.style.height = newHeight + 'px';
+    
+    // Optional: Add max height limit
+    if (newHeight > 200) {
+        textarea.style.height = '200px';
+        textarea.style.overflowY = 'auto';
+    } else {
+        textarea.style.overflowY = 'hidden';
+    }
+}
+
 function showWorkspaceSetup() {
   hideAuthModal();
   document.getElementById("workspace-modal").classList.add("active");
@@ -2251,6 +2268,30 @@ function openEventModal(
     const modalTitle = document.getElementById("event-modal-title");
     const eventModal = document.getElementById("eventModal");
 
+        setTimeout(() => {
+        const locationTextarea = document.getElementById('eventLocation');
+        const notesTextarea = document.getElementById('eventNotes');
+        
+        if (locationTextarea) {
+            // Initial resize
+            autoResizeTextarea(locationTextarea);
+            
+            // Add input event listener
+            locationTextarea.addEventListener('input', () => {
+                autoResizeTextarea(locationTextarea);
+            });
+        }
+        
+        if (notesTextarea) {
+            // Initial resize
+            autoResizeTextarea(notesTextarea);
+            
+            // Add input event listener
+            notesTextarea.addEventListener('input', () => {
+                autoResizeTextarea(notesTextarea);
+            });
+        }
+    }, 100);
     // Clear form fields
     if (eventTitle) eventTitle.value = "";
     if (eventStartTime) eventStartTime.value = "";
